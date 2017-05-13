@@ -1,0 +1,2 @@
+# HowDoTheHorsiesMove
+Minichess player
