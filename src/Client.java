@@ -79,10 +79,10 @@ public class Client {
      * @param verbose  if true, print the command sent on stdout
      * @return  response
      */
-    public String expect(String code, boolean verbose) 
+    public boolean expect(String code, boolean verbose)
       throws IOException {
 	String response = expectResponse(verbose);
-	return responseString(response);
+	return responseString(response).equals(code);
     }
 
     /**
