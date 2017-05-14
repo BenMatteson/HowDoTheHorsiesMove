@@ -19,7 +19,7 @@ public class NegMaxPlayer extends Player{
         super(board, isWhite);
         ab = alphaBeta;
         if (alphaBeta)
-            depth = 6;
+            depth = 7;
         else
             depth = 6;
     }
@@ -37,8 +37,10 @@ public class NegMaxPlayer extends Player{
         }
         if(!ab)
             evaluateMoves(moves, depth);
-        else
+        else {
+            Collections.sort(moves);//sort moves by heuristic value first to hopefully improve pruning
             abEvaluate(moves, depth, -10000000, 10000000);
+        }
         Collections.sort(moves);
         return moves.get(0);
     }

@@ -131,14 +131,17 @@ public class Piece {
     }
 
     private void scanMoves(List<Move> moves, int dx, int dy, boolean stopShort, int capture) {
-        Point xy = new Point(location);
+        int x, y;
+        x = location.x;
+        y = location.y;
         int xbound = Board.WIDTH - 1;
         int ybound = Board.HEIGHT - 1;
         do{
-            xy.translate(dx,dy);
-            if(xy.x > xbound || xy.y > ybound || xy.x < 0 || xy.y < 0)
+            x+=dx;
+            y+=dy;
+            if(x > xbound || y > ybound || x < 0 || y < 0)
                 break;
-            Piece target = board.getSquare(xy);
+            Piece target = board.getSquare(x, y);
             if(target.toChar() != '.') {
                 if (isWhite == target.isWhite || capture == 0) //same color or can't cap
                     break;
@@ -146,7 +149,7 @@ public class Piece {
             }
             else if(capture == -1)
                 break;
-            moves.add(new Move(location, new Point(xy), board));
+            moves.add(new Move(location, new Point(x, y), board));
         } while (!stopShort);
     }
 }

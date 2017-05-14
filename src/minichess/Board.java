@@ -143,6 +143,7 @@ public class Board {
             }
             out.append('\n');
         }
+        out.deleteCharAt(out.length()-1);
         return out.toString();
     }
 
