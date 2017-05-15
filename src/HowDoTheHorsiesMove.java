@@ -9,26 +9,31 @@ import java.util.PriorityQueue;
  * Created by ben on 4/27/2017.
  */
 public class HowDoTheHorsiesMove {
-    public static void main(String[] args) {
-        String server = "imcs.svcs.cs.pdx.edu";
-        String port = "3589";
-        String user = "HowDoTheHorsiesMove";
-        String pass = "";
-        boolean local = false;
-        boolean isWhite = true;
-        int playerType = 0; //0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random, 4 = server
-        int player2Type = 4;
-        boolean offer = true;
-        String accept = "";
+    private static String server = "imcs.svcs.cs.pdx.edu";
+    private static String port = "3589";
+    private static String user = "HowDoTheHorsiesMove";
+    private static String pass = "";
+    private static boolean local = false;
+    private static boolean isWhite = true;
+    private static int playerType = 0; //0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random, 4 = server
+    private static int player2Type = 4;
+    private static boolean offer = true;
+    private static String accept = "";
+    private static int depth = 7;
+    private static Client client = null;
+    private static Board board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK");
 
+    public static void main(String[] args) {
+
+        //parse args, can use form "-xyz x_add z_add", or "-x x_add -y -z z_add" or any combination
         for (int i = 0; i < args.length; ++i) {
             String s = args[i].toLowerCase();
             if (s.charAt(0) == '-') {
-                for (int j = 0; j < s.length(); ++j) {
+                for (int j = 1; j < s.length(); ++j) {//start at 1 to skip '-'
                     char c = s.charAt(j);
                     switch (Character.toLowerCase(c)) {
                         case 's':
-                            server = args[++i];
+                            server = args[++i];//these increment first, so the next arg is read and will be skipped in loop
                             break;
                         case 'u':
                             user = args[++i];
@@ -38,16 +43,21 @@ public class HowDoTheHorsiesMove {
                             break;
                         case '2':
                             local = true;
-                            player2Type = Character.getNumericValue(++i);
+                            player2Type = Integer.parseInt(args[++i]);
                             break;
                         case 'w':
-                            isWhite = true;
+                            if(!isWhite) {
+                                int temp = player2Type;
+                                player2Type = playerType;
+                                playerType = temp;
+                            }
                             break;
                         case'b':
-                            isWhite = false;
-                            int temp = player2Type;
-                            player2Type = playerType;
-                            playerType = temp;
+                            if(isWhite) {
+                                int temp = player2Type;
+                                player2Type = playerType;
+                                playerType = temp;
+                            }
                             break;
                         case 'a':
                             offer = false;
@@ -57,15 +67,18 @@ public class HowDoTheHorsiesMove {
                             offer = true;
                             break;
                         case 't':
-                            playerType = Character.getNumericValue(++i);
+                            playerType = Integer.parseInt(args[++i]);
+                            break;
+                        case 'd':
+                            depth = Integer.parseInt(args[++i]);
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
                     }
                 }
             }
         }
-        Board board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK");
-        Client client = null;
+
+        //set up server connection unless playing local game
         if(!local) {
             try {
                 client = new Client(server, port, user, pass);
@@ -92,16 +105,19 @@ public class HowDoTheHorsiesMove {
                 System.err.println(io);
             }
         }
-        Player white = getPlayerType(board, true, playerType, client);
-        Player black = getPlayerType(board, false, player2Type, client);
-        System.out.println(board);
+
+        //create players and play the game
+        Player white = getPlayerType(board, true, playerType);
+        Player black = getPlayerType(board, false, player2Type);
+        if(local)System.out.println(board);
+
         for (int i = 1; i <= 80; i++) {
             Move move;
             if (i % 2 == 1)
                 move = white.getPlay();
             else
                 move = black.getPlay();
-            System.out.println(move);
+            if(local)System.out.println(move);
             if (move == null) {
                 System.out.println("player ran out of moves");
                 client.send("resign", true);
@@ -114,8 +130,11 @@ public class HowDoTheHorsiesMove {
 
             move.make();
 
-            //System.out.println(board);
-            System.out.println(board.getValue());
+            if(local) {
+                System.out.println(board);
+            }
+                System.out.println(board.getValue());
+            //}
 
             if (board.getValue(true) > 100000) {
                 System.out.println(white + " wins!");
@@ -129,14 +148,14 @@ public class HowDoTheHorsiesMove {
         try {client.close(); } catch (Exception e) { }
     }
 
-    private static Player getPlayerType(Board board, boolean isWhite, int type, Client client) {
+    private static Player getPlayerType(Board board, boolean isWhite, int type) {
         switch (type) {//0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random
             case 0:
-                return new NegMaxPlayer(board, isWhite, true, 8);//TODO fix when there's an itterative player
+                return new NegMaxPlayer(board, isWhite, true, depth);//TODO fix when there's an itterative player
             case 1:
-                return new NegMaxPlayer(board, isWhite, true, 7);
+                return new NegMaxPlayer(board, isWhite, true, depth);
             case 2:
-                return new NegMaxPlayer(board, isWhite, false, 6);
+                return new NegMaxPlayer(board, isWhite, false, depth);
             case 3:
                 return new RandomPlayer(board, isWhite);
             case 4:
