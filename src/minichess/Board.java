@@ -41,7 +41,7 @@ public class Board {
     }
 
     public boolean isWhiteTurn() {
-        return ply % 2 == 0;
+        return ply % 2 == 1;
     }
 
     //board value based purely on piece values
@@ -118,7 +118,7 @@ public class Board {
         String[] parts = board.split("\n");
         String[] hist = parts[0].split(" ");
         int play = new Integer(hist[0]);
-        ply = 2 * play + (hist[1].contains("B") ? 1 : 0);
+        ply = 2 * play - (hist[1].toLowerCase().contains("w") ? 1 : 0);
         this.board = new Piece[WIDTH][HEIGHT];
         for (int h = 0; h < HEIGHT; h++) {
             for (int w = 0; w < WIDTH; w++) {
@@ -136,7 +136,7 @@ public class Board {
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder();
-        out.append((getPly() / 2) + " " + (isWhiteTurn() ? "W" : "B") + "\n");
+        out.append(((getPly()+1) / 2) + " " + (isWhiteTurn() ? "W" : "B") + "\n");
         for(int h = 0; h < HEIGHT; h++) {
             for(int w = 0; w < WIDTH; w++) {
                 out.append(board[w][h]);

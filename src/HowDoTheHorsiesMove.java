@@ -1,6 +1,7 @@
 import minichess.*;
 
 import java.io.IOException;
+import java.lang.reflect.Executable;
 import java.security.spec.ECField;
 import java.util.PriorityQueue;
 
@@ -49,9 +50,11 @@ public class HowDoTheHorsiesMove {
                             playerType = temp;
                             break;
                         case 'a':
+                            offer = false;
                             accept = args[++i];
                             break;
                         case 'o':
+                            offer = true;
                             break;
                         case 't':
                             playerType = Character.getNumericValue(++i);
@@ -61,15 +64,27 @@ public class HowDoTheHorsiesMove {
                 }
             }
         }
-        Board board = new Board("0 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK");
+        Board board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK");
         Client client = null;
         if(!local) {
             try {
                 client = new Client(server, port, user, pass);
                 if(offer) {
                     isWhite = Character.toLowerCase(client.offer(isWhite ? 'w' : 'b')) == 'w'; //offer game, ensure correct player
-                    if (!client.expect("103", false)) {
-                        System.out.println("error offering game, check args and try again");
+                }
+                else {
+                    client.send("accept " + accept, false);
+                    String r = client.expectResponse(false);
+                    if(r == "105" && !isWhite) {//fix configuration if accepted as other color
+                        isWhite = true;
+                        int temp = player2Type;
+                        player2Type = playerType;
+                        playerType = temp;
+                    } else if (r == "106" && isWhite) {
+                        isWhite = false;
+                        int temp = player2Type;
+                        player2Type = playerType;
+                        playerType = temp;
                     }
                 }
             } catch (IOException io) {
@@ -80,20 +95,26 @@ public class HowDoTheHorsiesMove {
         Player white = getPlayerType(board, true, playerType, client);
         Player black = getPlayerType(board, false, player2Type, client);
         System.out.println(board);
-        for (int i = 0; i <= 80; i++) {
+        for (int i = 1; i <= 80; i++) {
             Move move;
-            if (i % 2 == 0)
+            if (i % 2 == 1)
                 move = white.getPlay();
             else
                 move = black.getPlay();
             System.out.println(move);
             if (move == null) {
                 System.out.println("player ran out of moves");
+                client.send("resign", true);
+                try{client.close(); } catch (Exception e) { }
                 return;
             }
+
+            if(!local && board.isWhiteTurn() == isWhite)//networked game and is our turn, send move to server
+                client.send(move.toString(), false);
+
             move.make();
 
-            System.out.println(board);
+            //System.out.println(board);
             System.out.println(board.getValue());
 
             if (board.getValue(true) > 100000) {
@@ -105,15 +126,13 @@ public class HowDoTheHorsiesMove {
                 break;
             }
         }
-        try {
-            client.close();
-        } catch (Exception e) { }
+        try {client.close(); } catch (Exception e) { }
     }
 
     private static Player getPlayerType(Board board, boolean isWhite, int type, Client client) {
         switch (type) {//0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random
             case 0:
-                return new NegMaxPlayer(board, isWhite, true, 7);//TODO fix when there's an itterative player
+                return new NegMaxPlayer(board, isWhite, true, 8);//TODO fix when there's an itterative player
             case 1:
                 return new NegMaxPlayer(board, isWhite, true, 7);
             case 2:
