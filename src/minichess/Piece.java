@@ -10,7 +10,8 @@ import java.util.List;
 public class Piece {
     private Board board;
     private char self;
-    private boolean isWhite;
+    private boolean isWhite = false;
+    private boolean isBlack = false;
     private int value;
     private Point location;
 
@@ -25,10 +26,15 @@ public class Piece {
         this.location = location;
         self = c;
         isWhite = Character.isUpperCase(c);
+        isBlack = Character.isLowerCase(c);
     }
 
     public boolean isWhite() {
         return isWhite;
+    }
+
+    public boolean isBlack() {
+        return isBlack;
     }
 
     public int getValue() {

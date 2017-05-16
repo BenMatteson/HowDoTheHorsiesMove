@@ -24,9 +24,13 @@ public class NegMaxPlayer extends Player{
             depth = 6;
     }
 
+    public void setDepth(int depth) {
+        this.depth = depth;
+    }
+
     @Override
     public Move getPlay() {
-        ArrayList<Move> moves = new ArrayList<>();
+        ArrayList<Move> moves = new ArrayList<>(30);//30 is probably about optimal
         PlayerPieces pieces;
         if(isWhite)
             pieces = board.whitePieces;
@@ -45,8 +49,8 @@ public class NegMaxPlayer extends Player{
         return moves.get(0);
     }
 
-    private int evaluateMoves(List<Move> moves, int depth) {
-        if(depth > 0) {
+    int evaluateMoves(List<Move> moves, int depth) {
+        if(depth > 0 && board.getPly() <= 80) {
             int value = Integer.MIN_VALUE;
             PlayerPieces pieces;
             if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
@@ -57,10 +61,11 @@ public class NegMaxPlayer extends Player{
                 if(move.getValue() > 100000)
                     return 1000000 + depth; //return early if taking a king, we found a win, add depth to favor faster win
                 move.make();
-                List<Move> moves2 = new ArrayList<>();
+                List<Move> moves2 = new ArrayList<>(30);
                 for (Piece p : pieces) {
                     p.addMovesToList(moves2);
                 }
+                //System.out.println(moves.size());
                 int moveVal = -evaluateMoves(moves2, depth - 1);
                 move.setValue(moveVal);
                 move.undo();
@@ -83,13 +88,18 @@ public class NegMaxPlayer extends Player{
             pieces = board.blackPieces;
         int value = Integer.MIN_VALUE;
 
-        for (Move move : moves) {
+        //for (Move move : moves) {
+        int s = moves.size();
+        for (int i = 0; i < s; i++) {
+            Move move = moves.get(i);
+
             if(move.getValue() > 100000)
                 return 1000000 + depth; //return early if taking a king, we found a win, add depth to favor faster wins
             //make the move to analyze the board that results
             move.make();
             //create list of possible moves available to opponent
-            List<Move> moves2 = new ArrayList<>();
+            List<Move> moves2 = new ArrayList<>(30); //30 is big enough >99.9% of the time,
+                                            // and not having to grow the array makes a big difference
             for (Piece p : pieces) {
                 p.addMovesToList(moves2);
             }

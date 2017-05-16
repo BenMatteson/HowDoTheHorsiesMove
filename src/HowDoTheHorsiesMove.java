@@ -71,6 +71,7 @@ public class HowDoTheHorsiesMove {
                             break;
                         case 'd':
                             depth = Integer.parseInt(args[++i]);
+                            break;
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
                     }
@@ -80,6 +81,10 @@ public class HowDoTheHorsiesMove {
 
         //set up server connection unless playing local game
         if(!local) {
+            if(pass == "") {
+                System.out.println("must provide a password for networked game\nexiting");
+                return;
+            }
             try {
                 client = new Client(server, port, user, pass);
                 if(offer) {
