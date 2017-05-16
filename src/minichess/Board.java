@@ -67,13 +67,11 @@ public class Board {
     }
 
     private Piece setSquare(char c, int x, int y) {
-        Piece ret = board[x][y];
-        board[x][y] = new Piece(this, new Point(x,y), c);
-        return ret;
+        return setSquare(c,new Point(x,y));
     }
 
     private Piece setSquare(char c, Point loc) {
-        return setSquare(c,loc.x,loc.y);
+        return setSquare(new Piece(this, loc, c), loc);
     }
 
     private Piece setSquare(Piece piece, Point loc) {
@@ -83,34 +81,66 @@ public class Board {
         return ret;
     }
 
-    boolean doMove(Move move) {
-        Piece piece = getSquare(move.getSrc());
-        piece.setLocation(move.getTarget());
-        Piece took = setSquare(piece, move.getTarget());
-        setSquare('.', move.getSrc());
-        whitePieces.remove(took);
-        blackPieces.remove(took);
+    //TODO behavior is strange(passive) after adding pawn promotions, find the bug
+    void doMove(Move move) {
+        Piece piece = setSquare('.', move.getSrc());//grab the piece off the board
+        Point dest = move.getTarget();//cache this point 'cause we use it a lot
+        //check for promotion
+        if (dest.y == HEIGHT - 1 && piece.toChar() == 'p') {//black pawn promotion, bottom of board
+            move.setPromotion(true);
+            blackPieces.remove(piece);//remove pawn from pieces
+            piece = new Piece(this, dest, 'q');
+            blackPieces.add(piece);//add queen to pieces
+        }
+        else if (dest.y == 0 && piece.toChar() == 'P') {//white pawn promotion, top of board
+            move.setPromotion(true);
+            whitePieces.remove(piece);
+            piece = new Piece(this, dest, 'Q');
+            whitePieces.add(piece);
+        }
+        else { //not a promotion, just move the piece
+            piece.setLocation(dest);
+        }
+
+        Piece took = setSquare(piece, dest);//set piece to new location and save the piece that was captured
         move.setTook(took);
+
+        if(took.isWhite()) whitePieces.remove(took);//remove piece list if needed
+        else if(took.isBlack()) blackPieces.remove(took);
         ++ply;
-        return !(took == null);
     }
 
-    boolean undoMove(Move move) {
-        Point target = move.getTarget();
-        Piece piece = getSquare(target);
+    void undoMove(Move move) {
+        //store values we need multiple times
         Point src = move.getSrc();
-        //if (getSquare(src) == null) return false;
-        //moves the src back
-        piece.setLocation(src);
-        setSquare(piece, src);
+        Point target = move.getTarget();
+        Piece piece = getSquare(target);//grab the piece from where it moved to
+
+        //handle promotion
+        if (move.isPromotion()) {
+            if (piece.isWhite()) {//was white pawn
+                whitePieces.remove(piece);
+                setSquare('P', src);
+                whitePieces.add(getSquare(src));
+            }
+            else {//must be black pawn
+                blackPieces.remove(piece);
+                setSquare('p', src);
+                blackPieces.add(getSquare(src));
+            }
+        } else {//no promotion
+            //moves the piece back
+            piece.setLocation(src);
+            setSquare(piece, src);
+        }
+
         Piece took = move.getTook();
-        if(Character.isLowerCase(took.toChar()))
+        if(took.isBlack())
             blackPieces.add(took);
-        else if(Character.isUpperCase(took.toChar()))
+        else if(took.isWhite())
             whitePieces.add(took);
         setSquare(took, target);
         --ply;
-        return true;
     }
 
     private void setBoard(String board) {

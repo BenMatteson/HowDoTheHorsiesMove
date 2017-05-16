@@ -15,10 +15,7 @@ public class Move implements Comparable<Move>{
     private Piece took;
     //value of the move for move ordering
     private int value;
-
-    public Move() {
-        value = 0;
-    }
+    private boolean promotion = false;
 
     public Move(Point piece, Point target, Board board) {
         this.src = piece;
@@ -55,16 +52,24 @@ public class Move implements Comparable<Move>{
         return value;
     }
 
+    public boolean isPromotion() {
+        return promotion;
+    }
+
+    public void setPromotion(boolean promotion) {
+        this.promotion = promotion;
+    }
+
     public void setValue(int val) {
         value = val;
     }
 
     public void make() {
-        if (!board.doMove(this)) throw new AssertionError();
+        board.doMove(this);
     }
 
     public void undo() {
-        if (!board.undoMove(this)) throw new AssertionError();
+        board.undoMove(this);
     }
 
     @Override
