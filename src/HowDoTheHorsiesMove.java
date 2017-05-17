@@ -86,19 +86,19 @@ public class HowDoTheHorsiesMove {
                 return;
             }
             try {
-                client = new Client(server, port, user, pass);
+                client = new Client(server,port);
+                client.login(user,pass);
                 if(offer) {
-                    isWhite = Character.toLowerCase(client.offer(isWhite ? 'w' : 'b')) == 'w'; //offer game, ensure correct player
+                    client.offerGameAndWait(isWhite ? 'w' : 'b'); //offer game, ensure correct player
                 }
                 else {
-                    client.send("accept " + accept, false);
-                    String r = client.expectResponse(false);
-                    if(r == "105" && !isWhite) {//fix configuration if accepted as other color
+                    char r = client.accept(accept);
+                    if(r == 'W' && !isWhite) {//fix configuration if accepted as other color
                         isWhite = true;
                         int temp = player2Type;
                         player2Type = playerType;
                         playerType = temp;
-                    } else if (r == "106" && isWhite) {
+                    } else if (r == 'B' && isWhite) {
                         isWhite = false;
                         int temp = player2Type;
                         player2Type = playerType;
@@ -125,13 +125,16 @@ public class HowDoTheHorsiesMove {
             if(local)System.out.println(move);
             if (move == null) {
                 System.out.println("player ran out of moves");
-                client.send("resign", true);
+                client.out.println("resign");
+                client.out.flush();
                 try{client.close(); } catch (Exception e) { }
                 return;
             }
 
             if(!local && board.isWhiteTurn() == isWhite)//networked game and is our turn, send move to server
-                client.send(move.toString(), false);
+                try {
+                client.sendMove(move.toString());
+                } catch (Exception e){}
 
             move.make();
 
