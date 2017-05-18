@@ -10,7 +10,6 @@ public class Move implements Comparable<Move>{
     //move from, to, and board for reference
     private Point src;
     private Point target;
-    private Board board;
     //what was taken(blanks are '.' "pieces"
     private Piece took;
     //value of the move for move ordering
@@ -20,7 +19,6 @@ public class Move implements Comparable<Move>{
     public Move(Point piece, Point target, Board board) {
         this.src = piece;
         this.target = target;
-        this.board = board;
         value = board.getSquare(target).getValue();
     }
 
@@ -28,7 +26,6 @@ public class Move implements Comparable<Move>{
         String[] pts = move.split("-");
         src = new Point((pts[0].charAt(0) - 'a'),6- Integer.parseInt(pts[0].substring(1)));
         target = new Point((pts[1].charAt(0) - 'a'),6- Integer.parseInt(pts[1].substring(1)));
-        this.board = board;
         value = board.getSquare(target).getValue();
     }
 
@@ -64,11 +61,11 @@ public class Move implements Comparable<Move>{
         value = val;
     }
 
-    public void make() {
+    public void make(Board board) {
         board.doMove(this);
     }
 
-    public void undo() {
+    public void undo(Board board) {
         board.undoMove(this);
     }
 

@@ -88,11 +88,14 @@ public class HowDoTheHorsiesMove {
                 client = new Client(server,port);
                 client.login(user,pass);
                 if(offer) {
-                    client.offerGameAndWait(isWhite ? 'w' : 'b'); //offer game, ensure correct player
+                    System.out.println("Offering Game as " + (isWhite ? "white" : "black"));
+                    client.offerGameAndWait(isWhite ? 'W' : 'B'); //offer game, ensure correct player
                 }
                 else {
                     char r = Character.toUpperCase(client.accept(accept));
+                    System.out.println("Accepted game as " + r);
                     if((r == 'W' && !isWhite) || (r == 'B' && isWhite)) {
+                        System.out.println("switching to " + r);
                         switchColor();
                     }
                 }
@@ -116,9 +119,14 @@ public class HowDoTheHorsiesMove {
                 move = black.getPlay();
             if (move == null) {
                 System.out.println("player ran out of moves");
-                client.out.println("resign");
-                client.out.flush();
-                try{client.close(); } catch (Exception e) { }
+                if(!local) {
+                    client.out.println("resign");
+                    client.out.flush();
+                    try {
+                        client.close();
+                    } catch (Exception e) {
+                    }
+                }
                 return;
             }
 
@@ -132,7 +140,7 @@ public class HowDoTheHorsiesMove {
                 } catch (Exception e){}
 
             //make the move on our board
-            move.make();
+            move.make(board);
 
             //print board state to standard out, as well as heuristic valuation of current state for player on move
             System.out.println(board);
@@ -161,7 +169,7 @@ public class HowDoTheHorsiesMove {
     private static Player getPlayerType(Board board, boolean isWhite, int type, int depth) {
         switch (type) {//0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random, 4 = server
             case 0:
-                return new NegMaxPlayer(board, isWhite, true, depth);//TODO fix when there's an iterative player
+                return new IterativePlayer(board, isWhite);//Iterative player
             case 1:
                 return new NegMaxPlayer(board, isWhite, true, depth);//alpha-beta pruned player
             case 2:

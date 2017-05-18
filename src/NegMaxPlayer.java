@@ -60,7 +60,7 @@ public class NegMaxPlayer extends Player{
             for (Move move : moves) {
                 if(move.getValue() > 100000)
                     return 1000000 * depth; //return early if taking a king, we found a win, use depth to favor faster win
-                move.make();
+                move.make(board);
                 List<Move> moves2 = new ArrayList<>(30);
                 for (Piece p : pieces) {
                     p.addMovesToList(moves2);
@@ -68,7 +68,7 @@ public class NegMaxPlayer extends Player{
                 //System.out.println(moves.size());
                 int moveVal = -evaluateMoves(moves2, depth - 1);
                 move.setValue(moveVal);
-                move.undo();
+                move.undo(board);
                 value = Math.max(moveVal, value);
             }
             return value;
@@ -97,7 +97,7 @@ public class NegMaxPlayer extends Player{
             if(move.getValue() > 100000)
                 return 1000000 + depth; //return early if taking a king, we found a win, add depth to favor faster wins
             //make the move to analyze the board that results
-            move.make();
+            move.make(board);
             //create list of possible moves available to opponent
             List<Move> moves2 = new ArrayList<>(30); //30 is big enough >99.9% of the time,
                                             // and not having to grow the array makes a big difference
@@ -109,7 +109,7 @@ public class NegMaxPlayer extends Player{
             move.setValue(moveVal);
             //if the move is better than the best in another branch, we assume we won't be allowed to reach this branch
             if(moveVal >= beta) {
-                move.undo(); //undo the move before we return
+                move.undo(board); //undo the move before we return
                 return moveVal; //prune this move, opponent shouldn't let us get here...
             }
             //set the value to the highest seen in this branch
@@ -117,7 +117,7 @@ public class NegMaxPlayer extends Player{
             //set the alpha to the highest seen overall (that wasn't pruned by early return above)
             alpha = Math.max(alpha, moveVal);
             //undo the move now that we've evaluated it
-            move.undo();
+            move.undo(board);
         }
         return value;
     }
