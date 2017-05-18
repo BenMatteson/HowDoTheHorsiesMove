@@ -1,9 +1,6 @@
 import minichess.*;
 
 import java.io.IOException;
-import java.lang.reflect.Executable;
-import java.security.spec.ECField;
-import java.util.PriorityQueue;
 
 /**
  * Created by ben on 4/27/2017.
@@ -19,7 +16,8 @@ public class HowDoTheHorsiesMove {
     private static int player2Type = 4;
     private static boolean offer = true;
     private static String accept = "";
-    private static int depth = 7;
+    private static int whiteDepth = 6;
+    private static int blackDepth = -1;
     private static Client client = null;
     private static Board board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK");
 
@@ -47,16 +45,12 @@ public class HowDoTheHorsiesMove {
                             break;
                         case 'w':
                             if(!isWhite) {
-                                int temp = player2Type;
-                                player2Type = playerType;
-                                playerType = temp;
+                                switchColor();
                             }
                             break;
                         case'b':
                             if(isWhite) {
-                                int temp = player2Type;
-                                player2Type = playerType;
-                                playerType = temp;
+                                switchColor();
                             }
                             break;
                         case 'a':
@@ -70,7 +64,10 @@ public class HowDoTheHorsiesMove {
                             playerType = Integer.parseInt(args[++i]);
                             break;
                         case 'd':
-                            depth = Integer.parseInt(args[++i]);
+                            whiteDepth = Integer.parseInt(args[++i]);
+                            break;
+                        case 'f':
+                            blackDepth = Integer.parseInt(args[++i]);
                             break;
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
@@ -78,6 +75,8 @@ public class HowDoTheHorsiesMove {
                 }
             }
         }
+        if (blackDepth <= -1) blackDepth = whiteDepth; //allow using -d to set depth for either player in remote game
+        //we allow setting 0 to run it as a pure heuristic player
 
         //set up server connection unless playing local game
         if(!local) {
@@ -92,17 +91,9 @@ public class HowDoTheHorsiesMove {
                     client.offerGameAndWait(isWhite ? 'w' : 'b'); //offer game, ensure correct player
                 }
                 else {
-                    char r = client.accept(accept);
-                    if(r == 'W' && !isWhite) {//fix configuration if accepted as other color
-                        isWhite = true;
-                        int temp = player2Type;
-                        player2Type = playerType;
-                        playerType = temp;
-                    } else if (r == 'B' && isWhite) {
-                        isWhite = false;
-                        int temp = player2Type;
-                        player2Type = playerType;
-                        playerType = temp;
+                    char r = Character.toUpperCase(client.accept(accept));
+                    if((r == 'W' && !isWhite) || (r == 'B' && isWhite)) {
+                        switchColor();
                     }
                 }
             } catch (IOException io) {
@@ -112,17 +103,17 @@ public class HowDoTheHorsiesMove {
         }
 
         //create players and play the game
-        Player white = getPlayerType(board, true, playerType);
-        Player black = getPlayerType(board, false, player2Type);
-        if(local)System.out.println(board);
+        Player white = getPlayerType(board, true, playerType, whiteDepth);
+        Player black = getPlayerType(board, false, player2Type, blackDepth);
+        System.out.println(board);
 
+        //play they game
         for (int i = 1; i <= 80; i++) {
             Move move;
             if (i % 2 == 1)
                 move = white.getPlay();
             else
                 move = black.getPlay();
-            if(local)System.out.println(move);
             if (move == null) {
                 System.out.println("player ran out of moves");
                 client.out.println("resign");
@@ -131,24 +122,28 @@ public class HowDoTheHorsiesMove {
                 return;
             }
 
-            if(!local && board.isWhiteTurn() == isWhite)//networked game and is our turn, send move to server
+            //print move to standard out
+            System.out.println(move);
+
+            //if it's a networked game and is our turn, send our move to server
+            if(!local && board.isWhiteTurn() == isWhite)
                 try {
                 client.sendMove(move.toString());
                 } catch (Exception e){}
 
+            //make the move on our board
             move.make();
 
-            if(local) {
-                System.out.println(board);
-            }
-                System.out.println(board.getValue());
-            //}
+            //print board state to standard out, as well as heuristic valuation of current state for player on move
+            System.out.println(board);
+            System.out.println(board.getValue());
 
-            if (board.getValue(true) > 100000) {
+            //detect if it's a win, despite warnings, just using very large value for king to determine wins
+            if (board.getValue(true) > 1000000) {
                 System.out.println(white + " wins!");
                 break;
             }
-            if (board.getValue(false) > 100000) {
+            if (board.getValue(false) > 1000000) {
                 System.out.println(black + " wins!");
                 break;
             }
@@ -156,18 +151,25 @@ public class HowDoTheHorsiesMove {
         try {client.close(); } catch (Exception e) { }
     }
 
-    private static Player getPlayerType(Board board, boolean isWhite, int type) {
-        switch (type) {//0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random
+    private static void switchColor() {
+        int temp = player2Type;
+        player2Type = playerType;
+        playerType = temp;
+        isWhite = !isWhite;
+    }
+
+    private static Player getPlayerType(Board board, boolean isWhite, int type, int depth) {
+        switch (type) {//0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random, 4 = server
             case 0:
-                return new NegMaxPlayer(board, isWhite, true, depth);//TODO fix when there's an itterative player
+                return new NegMaxPlayer(board, isWhite, true, depth);//TODO fix when there's an iterative player
             case 1:
-                return new NegMaxPlayer(board, isWhite, true, depth);
+                return new NegMaxPlayer(board, isWhite, true, depth);//alpha-beta pruned player
             case 2:
-                return new NegMaxPlayer(board, isWhite, false, depth);
+                return new NegMaxPlayer(board, isWhite, false, depth);//negamax player
             case 3:
-                return new RandomPlayer(board, isWhite);
+                return new RandomPlayer(board, isWhite);//as the name implies, random player
             case 4:
-                return new RemotePlayer(board, isWhite, client);
+                return new RemotePlayer(board, isWhite, client);//wrapper for getting move from the server
             default:
                 return null;
         }

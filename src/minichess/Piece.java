@@ -56,7 +56,7 @@ public class Piece {
                     value = 1000;
                     break;
                 case 'k':
-                    value = 1000000;
+                    value = 10000000;
                     break;
                 default:
                     value = 0;
