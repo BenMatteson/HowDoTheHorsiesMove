@@ -58,8 +58,8 @@ public class NegMaxPlayer extends Player{
             else
                 pieces = board.blackPieces;
             for (Move move : moves) {
-                if(move.getValue() > 100000)
-                    return 1000000 * depth; //return early if taking a king, we found a win, use depth to favor faster win
+                if(move.getValue() > 9000000)
+                    return 100000 * depth; //return early if taking a king, we found a win, use depth to favor faster win
                 move.make(board);
                 List<Move> moves2 = new ArrayList<>(30);
                 for (Piece p : pieces) {
@@ -94,8 +94,8 @@ public class NegMaxPlayer extends Player{
         for (int i = 0; i < s; i++) {
             Move move = moves.get(i);
         //*/
-            if(move.getValue() > 100000)
-                return 1000000 + depth; //return early if taking a king, we found a win, add depth to favor faster wins
+            if(move.getValue() > 9000000)
+                return 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
             //make the move to analyze the board that results
             move.make(board);
             //create list of possible moves available to opponent

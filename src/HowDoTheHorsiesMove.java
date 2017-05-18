@@ -32,6 +32,7 @@ public class HowDoTheHorsiesMove {
                     switch (Character.toLowerCase(c)) {
                         case 's':
                             server = args[++i];//these increment first, so the next arg is read and will be skipped in loop
+                            port = args[++i];
                             break;
                         case 'u':
                             user = args[++i];
@@ -95,7 +96,6 @@ public class HowDoTheHorsiesMove {
                     char r = Character.toUpperCase(client.accept(accept));
                     System.out.println("Accepted game as " + r);
                     if((r == 'W' && !isWhite) || (r == 'B' && isWhite)) {
-                        System.out.println("switching to " + r);
                         switchColor();
                     }
                 }
@@ -108,7 +108,7 @@ public class HowDoTheHorsiesMove {
         //create players and play the game
         Player white = getPlayerType(board, true, playerType, whiteDepth);
         Player black = getPlayerType(board, false, player2Type, blackDepth);
-        System.out.println(board);
+        System.out.println(board + "\n");
 
         //play they game
         for (int i = 1; i <= 80; i++) {
@@ -143,8 +143,9 @@ public class HowDoTheHorsiesMove {
             move.make(board);
 
             //print board state to standard out, as well as heuristic valuation of current state for player on move
+            /*if(local)*/
             System.out.println(board);
-            System.out.println(board.getValue());
+            System.out.println(board.getValue() + "\n");
 
             //detect if it's a win, despite warnings, just using very large value for king to determine wins
             if (board.getValue(true) > 1000000) {
@@ -156,7 +157,8 @@ public class HowDoTheHorsiesMove {
                 break;
             }
         }
-        try {client.close(); } catch (Exception e) { }
+        System.out.println("Game Over");
+        if (!local) try {client.close(); } catch (Exception e) { }
     }
 
     private static void switchColor() {
@@ -164,6 +166,7 @@ public class HowDoTheHorsiesMove {
         player2Type = playerType;
         playerType = temp;
         isWhite = !isWhite;
+        System.out.println("switching color to " + (isWhite?'W':'B'));
     }
 
     private static Player getPlayerType(Board board, boolean isWhite, int type, int depth) {

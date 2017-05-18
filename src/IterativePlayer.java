@@ -1,8 +1,8 @@
 import minichess.*;
 
+import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,28 +12,40 @@ import java.util.List;
  */
 public class IterativePlayer extends Player {
     long end;
-    long turnTime = 7499000000l;//7500000000 is equal split of time
+    long turnTime;// = 7200000000L;//7500000000 is equal split of time
     PlayerThread running;
 
     public IterativePlayer(Board board, boolean isWhite) {
         super(board, isWhite);
-        end = LocalTime.now().toNanoOfDay();
+        end = System.nanoTime() + 280000000000L;//4:40:00
     }
 
     @Override
     public Move getPlay() {
-        end = LocalTime.now().toNanoOfDay() + turnTime;
-        if(running != null) {
+        turnTime = (end - System.nanoTime()) / (80 - board.getPly());//remaining time / number of moves to make
+        if(running != null) { //stop previous thread if there is one
             running.interrupt();
         }
+        //start thread to calculate move
         running = new PlayerThread(new Board(board.toString()), isWhite);
         running.start();
-        while (LocalTime.now().toNanoOfDay() < end) {
+        //delay for the move time determined above
+        long turnStart = System.nanoTime();
+        while (System.nanoTime() - turnStart < turnTime) {
             try {Thread.sleep(1);}
             catch (InterruptedException e) {
                 continue;
             }
         }
+        //if the current step is probably almost finished, let it run about how long we expect, if this isn't enough we need to give up
+        if(System.nanoTime() - running.itrStart < running.predictedNext * .3) {
+            long extra = running.predictedNext / 3;
+            try {
+                Thread.sleep(extra / 1000000, ((int) (extra % 1000000)));
+            } catch (InterruptedException e) {
+            }
+        }
+        //read the results of the last complete iteration
         return running.getMove();
     }
 }
@@ -44,6 +56,9 @@ class PlayerThread extends Thread {
     boolean isWhite;
     boolean running;
     ArrayList<Move> moves;
+    long itrStart;
+    long itrEnd;
+    long predictedNext;
 
     public PlayerThread(Board board, boolean isWhite) {
         this.board = board;
@@ -63,14 +78,19 @@ class PlayerThread extends Thread {
         for (Piece p : pieces) {
             p.addMovesToList(moves);
         }
-        //TODO decide if I want this sort
-        //Collections.sort(moves);//sort moves by heuristic value first to hopefully improve pruning
+        //Collections.sort(moves);//we skip this sort since we recycle the move list anyway, the deepening does it
         for (int i = 1; i < 10; i++) {//10 is probably as high as I'd ever want
-            itrEvaluate(moves, i, -10000000, 10000000);
-            if(!Thread.interrupted()) {//if the thread is interrupted we'll start getting garbage out so we don't want to save it
-                Collections.sort(moves);
-                move = moves.get(0);
+            itrStart = System.nanoTime();
+            try {
+                itrEvaluate(moves, i, -10000000, 10000000);
+            } catch (InterruptedException e) {
+                return;
             }
+            itrEnd = System.nanoTime();
+            predictedNext = (itrEnd - itrStart) * 17;//guess at a good branching factor. seems like it hits often, probably good?
+            Collections.sort(moves);
+            move = moves.get(0);
+            //System.out.println(i);
         }
     }
 
@@ -78,9 +98,9 @@ class PlayerThread extends Thread {
         return move;
     }
 
-    private int itrEvaluate(List<Move> moves, int depth, int alpha, int beta) {
-        if(Thread.interrupted())
-            return 0;//we're throwing all this away anyway
+    private int itrEvaluate(List<Move> moves, int depth, int alpha, int beta) throws InterruptedException {
+        if(Thread.interrupted())//done with this thread, throw it out!
+            throw new InterruptedException();
         if(depth <= 0)
             return board.getValue(); // called from a leaf, just use heuristic valuation of board
 
@@ -97,13 +117,13 @@ class PlayerThread extends Thread {
         for (int i = 0; i < s; i++) {
             Move move = moves.get(i);
             //*/
-            if(move.getValue() > 100000)
-                return 1000000 + depth; //return early if taking a king, we found a win, add depth to favor faster wins
+            if(move.getValue() > 9000000)
+                return 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
             //make the move to analyze the board that results
             move.make(board);
             //create list of possible moves available to opponent
-            List<Move> moves2 = new ArrayList<>(30); //30 is big enough >99.9% of the time,
-            // and not having to grow the array makes a big difference
+            //30 is big enough >99.9% of the time, and not having to grow the array makes a big difference
+            List<Move> moves2 = new ArrayList<>(30);
             for (Piece p : pieces) {
                 p.addMovesToList(moves2);
             }
