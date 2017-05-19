@@ -47,10 +47,10 @@ public class Piece {
                     value = 500;
                     break;
                 case 'b':
-                    value = 350;
+                    value = 200;
                     break;
                 case 'n':
-                    value = 250;
+                    value = 400;
                     break;
                 case 'q':
                     value = 1000;

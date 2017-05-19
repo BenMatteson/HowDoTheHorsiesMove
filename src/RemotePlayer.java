@@ -20,7 +20,7 @@ public class RemotePlayer extends Player {
             return new Move(client.getMove(), board);
         }
         catch (IOException io) {
-            return getPlay();
+            return getPlay();//try again?
         }
     }
 }

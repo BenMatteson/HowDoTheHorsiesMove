@@ -118,15 +118,20 @@ public class HowDoTheHorsiesMove {
             else
                 move = black.getPlay();
             if (move == null) {
-                System.out.println("player ran out of moves");
-                if(!local) {
-                    client.out.println("resign");
-                    client.out.flush();
+                if(board.isWhiteTurn() == isWhite) {//our turn and can't move, resign.
+                    System.out.println("player ran out of moves");
+                    if (!local) {
+                        client.out.println("resign");
+                        client.out.flush();
+                    } else {//not our turn, something went wrong, if it's not our fault we probably won
+                        System.out.println("something went wrong, I should work on dealing with this better, but right now I just have to PANIC!");
+                    }
                     try {
                         client.close();
                     } catch (Exception e) {
                     }
                 }
+
                 return;
             }
 
