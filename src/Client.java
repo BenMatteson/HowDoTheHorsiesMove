@@ -224,7 +224,9 @@ public class Client {
      */
     public char offerGameAndWait() throws IOException, RuntimeException {
         sendCommand(IMCSCommands.OFFER);
-        awaitResponse().assertHasCode(103); // waiting for opponent
+        IMCSResponse res = awaitResponse();
+        System.out.println(res.message);
+        res.assertHasCode(103); // waiting for opponent
         IMCSResponse gameStartResponse = awaitResponse();
         gameStartResponse.assertHasCode(105, 106); // game started
         return gameStartResponse.message.charAt(0);
@@ -238,11 +240,13 @@ public class Client {
      */
     public void offerGameAndWait(char player) throws IOException, RuntimeException {
         sendCommand(IMCSCommands.OFFER, player);
-        awaitResponse().assertHasCode(103); // waiting for opponent
+        IMCSResponse res = awaitResponse();
+        System.out.println(res.message);
+        res.assertHasCode(103); // waiting for opponent
         awaitResponse().assertHasCode(105, 106); // game started
     }
 
-
+//TODO sout game id on accept too
     /**
      * Accept an offered match with the given gameId, requesting the given player.
      * @param gameId Id of the offered game to join.

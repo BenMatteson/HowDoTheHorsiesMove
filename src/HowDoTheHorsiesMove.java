@@ -89,12 +89,12 @@ public class HowDoTheHorsiesMove {
                 client = new Client(server,port);
                 client.login(user,pass);
                 if(offer) {
-                    System.out.println("Offering Game as " + (isWhite ? "white" : "black"));
+                    System.out.println("Playing as " + (isWhite ? "white" : "black"));
                     client.offerGameAndWait(isWhite ? 'W' : 'B'); //offer game, ensure correct player
                 }
                 else {
                     char r = Character.toUpperCase(client.accept(accept));
-                    System.out.println("Accepted game as " + r);
+                    System.out.println("Playing as as " + (r == 'W' ? "white" : "black"));
                     if((r == 'W' && !isWhite) || (r == 'B' && isWhite)) {
                         switchColor();
                     }
@@ -117,21 +117,22 @@ public class HowDoTheHorsiesMove {
                 move = white.getPlay();
             else
                 move = black.getPlay();
-            if (move == null) {
+            if (move == null) {//TODO getting null here even when we have moves to make... http://imcs.svcs.cs.pdx.edu/minichess/logs/15213
                 if(board.isWhiteTurn() == isWhite) {//our turn and can't move, resign.
                     System.out.println("player ran out of moves");
-                    if (!local) {
-                        client.out.println("resign");
-                        client.out.flush();
-                    } else {//not our turn, something went wrong, if it's not our fault we probably won
-                        System.out.println("something went wrong, I should work on dealing with this better, but right now I just have to PANIC!");
-                    }
+                } else {//not our turn, something went wrong, if it's not our fault we probably won
+                    System.out.println("something went wrong, I should work on dealing with this better, but right now I just have to PANIC!");
+                }
+                if (!local) {
+                    client.out.println("resign");
+                    client.out.flush();
+
                     try {
                         client.close();
                     } catch (Exception e) {
                     }
                 }
-
+                //System.out.println("test");
                 return;
             }
 

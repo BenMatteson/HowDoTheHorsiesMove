@@ -6,6 +6,7 @@
 .idea/**/vcs.xml
 .idea/**/tasks.xml
 .idea/dictionaries
+*.zip
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
@@ -62,3 +63,7 @@ fabric.properties
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+#ant
+build.properties
+

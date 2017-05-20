@@ -81,7 +81,6 @@ public class Board {
         return ret;
     }
 
-    //TODO behavior is strange(passive) after adding pawn promotions, find the bug
     void doMove(Move move) {
         Piece piece = setSquare('.', move.getSrc());//grab the piece off the board
         Point dest = move.getTarget();//cache this point 'cause we use it a lot
