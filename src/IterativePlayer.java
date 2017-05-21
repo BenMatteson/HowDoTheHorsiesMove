@@ -1,52 +1,85 @@
 import minichess.*;
 
-import java.sql.Time;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 
 /**
  * Created by ben on 5/14/2017.
  */
+
 public class IterativePlayer extends Player {
-    long end;
-    long turnTime;// = 7200000000L;//7500000000 is equal split of time
+    long remaining;
+    long turnTime;
     PlayerThread running;
+    boolean ready;
 
     public IterativePlayer(Board board, boolean isWhite) {
         super(board, isWhite);
-        end = System.nanoTime() + 280000000000L;//4:40:00
+        remaining = 295000000000L;//4:55
+        ready = false;
     }
 
     @Override
-    public Move getPlay() {
-        turnTime = (end - System.nanoTime()) / (80 - board.getPly());//remaining time / number of moves to make
-        if(running != null) { //stop previous thread if there is one
+    public synchronized Move getPlay() {
+        long startTime = System.nanoTime();
+        ready = false;
+        turnTime = remaining / ((82 - board.getPly()) / 2);//remaining time / number of moves to make
+
+        if(running != null)  //stop previous thread if there is one
             running.interrupt();
-        }
+
         //start thread to calculate move
-        running = new PlayerThread(new Board(board.toString()), isWhite);
+        running = new PlayerThread(new Board(board.toString()), isWhite, this);
         running.start();
-        //delay for the move time determined above
-        long turnStart = System.nanoTime();
-        while (System.nanoTime() - turnStart < turnTime) {
-            try {Thread.sleep(1);}
-            catch (InterruptedException e) {
-                continue;
-            }
-        }
-        //if the current step is probably almost finished, let it run about how long we expect, if this isn't enough we need to give up
-        if(System.nanoTime() - running.itrStart < running.predictedNext * .3) {
-            long extra = running.predictedNext / 3;
+
+        //first we wait for some value to be available at all
+        while (!ready){
             try {
-                Thread.sleep(extra / 1000000, ((int) (extra % 1000000)));
+                wait();
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
+
+        //then delay for the move time determined above
+        try {
+            Thread.sleep(turnTime / 1000000, ((int) (turnTime % 1000000)));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //if the current step is probably almost finished, let it run about how long we expect,
+        // if this isn't enough we need to give up
+        if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
+            long extra = running.predictedNext / 3;//give an extra 33% of predicted
+
+            //set a timer to give up
+            ready = false;
+            running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
+
+            //wait for either the timer to expire or the iteration to complete
+            try {
+                wait((extra / 1000000) + 1);//add 1 to ensure not 0 which is infinite wait.
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //deduct time spent from our timer, we use less than 5 minutes to account for other overhead
+        remaining -= System.nanoTime() - startTime;
+
         //read the results of the last complete iteration
         return running.getMove();
+    }
+
+    synchronized void gotMove() {
+        ready = true;
+        notify();
+    }
+
+    public void terminate() {
+        if(running != null)
+            running.interrupt();
     }
 }
 
@@ -59,11 +92,17 @@ class PlayerThread extends Thread {
     long itrStart;
     long itrEnd;
     long predictedNext;
+    IterativePlayer p;
+    boolean requestNotify;
+    boolean read;
 
-    public PlayerThread(Board board, boolean isWhite) {
+    public PlayerThread(Board board, boolean isWhite, IterativePlayer player) {
         this.board = board;
         this.isWhite = isWhite;
         running = true;
+        p = player;
+        requestNotify = true;
+        read = false;
     }
 
     @Override
@@ -79,7 +118,7 @@ class PlayerThread extends Thread {
             p.addMovesToList(moves);
         }
         //Collections.sort(moves);//we skip this sort since we recycle the move list anyway, the deepening does it
-        for (int i = 1; i < 10; i++) {//10 is probably as high as I'd ever want
+        for (int i = 1; i < 80; i++) {
             itrStart = System.nanoTime();
             try {
                 itrEvaluate(moves, i, -10000000, 10000000);
@@ -90,11 +129,25 @@ class PlayerThread extends Thread {
             predictedNext = (itrEnd - itrStart) * 17;//guess at a good branching factor. seems like it hits often, probably good?
             Collections.sort(moves);
             move = moves.get(0);
+            if(requestNotify) {
+                p.gotMove();
+                requestNotify = false;
+            }
+
             //System.out.println(i);
+        }
+        //we wait if we've exited the loop in case the player hasn't retrieved it yet.
+        while(!read){
+            try {
+                sleep(1000);
+            } catch (InterruptedException e) {
+                return;
+            }
         }
     }
 
     public Move getMove() {
+        read = true;
         return move;
     }
 

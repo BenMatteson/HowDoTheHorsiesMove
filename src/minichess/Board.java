@@ -28,14 +28,6 @@ public class Board {
         setBoard(board);
     }
 
-    public int getHeight() {
-        return HEIGHT;
-    }
-
-    public int getWidth() {
-        return WIDTH;
-    }
-
     public int getPly() {
         return ply;
     }

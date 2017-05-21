@@ -22,5 +22,9 @@ public class RemotePlayer extends Player {
         catch (IOException io) {
             return getPlay();//try again?
         }
+        catch (NullPointerException e) {
+            System.out.println("client disconnected, we may have run out of time...");
+            return null;
+        }
     }
 }

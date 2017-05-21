@@ -117,7 +117,7 @@ public class HowDoTheHorsiesMove {
                 move = white.getPlay();
             else
                 move = black.getPlay();
-            if (move == null) {//TODO getting null here even when we have moves to make... http://imcs.svcs.cs.pdx.edu/minichess/logs/15213
+            if (move == null) {
                 if(board.isWhiteTurn() == isWhite) {//our turn and can't move, resign.
                     System.out.println("player ran out of moves");
                 } else {//not our turn, something went wrong, if it's not our fault we probably won
@@ -133,7 +133,7 @@ public class HowDoTheHorsiesMove {
                     }
                 }
                 //System.out.println("test");
-                return;
+                break;//ends game, tries to cleanup
             }
 
             //print move to standard out
@@ -164,7 +164,17 @@ public class HowDoTheHorsiesMove {
             }
         }
         System.out.println("Game Over");
-        if (!local) try {client.close(); } catch (Exception e) { }
+        //do some cleanup
+        if (!local) try {client.close(); } catch (Exception e) { }//close connection to server
+        //terminate threads for iterative player
+        try {
+            ((IterativePlayer) white).terminate();
+        }
+        catch (Exception e) {}
+        try {
+            ((IterativePlayer) black).terminate();
+        }
+        catch (Exception e) {}
     }
 
     private static void switchColor() {

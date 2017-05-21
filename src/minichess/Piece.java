@@ -16,8 +16,9 @@ public class Piece {
     private Point location;
 
     public Piece() {
-        board = null;
+        board = null;//only need these for pieces that move
         location = null;
+
         self = '.';
     }
 
@@ -53,7 +54,7 @@ public class Piece {
                     value = 400;
                     break;
                 case 'q':
-                    value = 1000;
+                    value = 900;
                     break;
                 case 'k':
                     value = 10000000;
@@ -72,10 +73,6 @@ public class Piece {
     @Override
     public String toString() {
         return Character.toString(self);
-    }
-
-    public Point getLocation() {
-        return location;
     }
 
     public void setLocation(Point location) {
