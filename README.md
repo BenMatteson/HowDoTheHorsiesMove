@@ -33,7 +33,7 @@ currently supports several players including, random, negamax of arbitrary depth
 	
   -w
   
-	sets player 1 to be the white player and player 2 to be the black player. this is the default.
+	sets player 1 to be the white player and player 2 to be the black player.
 	
   -b
   
@@ -45,7 +45,7 @@ currently supports several players including, random, negamax of arbitrary depth
   
   -o
   
-	offers a game on the sever. this is the default behavior. desired color can be set by -b and -w flags found above.
+	offers a game on the sever. this is the default behavior. desired color can be set by -b and -w flags found above. if not set, game will be offered as either color.
 	
   -d <WHITE_DEPTH>
   

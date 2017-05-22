@@ -12,6 +12,7 @@ public class HowDoTheHorsiesMove {
     private static String pass = "";
     private static boolean local = false;
     private static boolean isWhite = true;
+    private static boolean choseColor = false;
     private static int playerType = 0; //0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random, 4 = server
     private static int player2Type = 4;
     private static boolean offer = true;
@@ -48,11 +49,13 @@ public class HowDoTheHorsiesMove {
                             if(!isWhite) {
                                 switchColor();
                             }
+                            choseColor = true;
                             break;
                         case'b':
                             if(isWhite) {
                                 switchColor();
                             }
+                            choseColor = true;
                             break;
                         case 'a':
                             offer = false;
@@ -89,8 +92,17 @@ public class HowDoTheHorsiesMove {
                 client = new Client(server,port);
                 client.login(user,pass);
                 if(offer) {
-                    System.out.println("Playing as " + (isWhite ? "white" : "black"));
-                    client.offerGameAndWait(isWhite ? 'W' : 'B'); //offer game, ensure correct player
+                    if (choseColor) {
+                        System.out.println("Playing as " + (isWhite ? "white" : "black"));
+                        client.offerGameAndWait(isWhite ? 'W' : 'B'); //offer game as desired color
+                    }
+                    else {
+                        System.out.println("no color specified, offering game as either");
+                        char c = Character.toUpperCase(client.offerGameAndWait());//save color we get
+                        if (!((isWhite ? 'W' : 'B') == c)) {//if we're not set up as right color, switch
+                            switchColor();
+                        }
+                    }
                 }
                 else {
                     char r = Character.toUpperCase(client.accept(accept));
