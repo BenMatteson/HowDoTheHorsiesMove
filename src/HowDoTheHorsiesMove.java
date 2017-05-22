@@ -93,7 +93,6 @@ public class HowDoTheHorsiesMove {
                 client.login(user,pass);
                 if(offer) {
                     if (choseColor) {
-                        System.out.println("Playing as " + (isWhite ? "white" : "black"));
                         client.offerGameAndWait(isWhite ? 'W' : 'B'); //offer game as desired color
                     }
                     else {
@@ -103,6 +102,7 @@ public class HowDoTheHorsiesMove {
                             switchColor();
                         }
                     }
+                    System.out.println("Playing as " + (isWhite ? "white" : "black"));
                 }
                 else {
                     char r = Character.toUpperCase(client.accept(accept));
@@ -132,17 +132,17 @@ public class HowDoTheHorsiesMove {
             if (move == null) {
                 if(board.isWhiteTurn() == isWhite) {//our turn and can't move, resign.
                     System.out.println("player ran out of moves");
+                    if (!local) {
+                        client.out.println("resign");
+                        client.out.flush();
+
+                        try {
+                            client.close();
+                        } catch (Exception e) {
+                        }
+                    }
                 } else {//not our turn, something went wrong, if it's not our fault we probably won
                     System.out.println("something went wrong, I should work on dealing with this better, but right now I just have to PANIC!");
-                }
-                if (!local) {
-                    client.out.println("resign");
-                    client.out.flush();
-
-                    try {
-                        client.close();
-                    } catch (Exception e) {
-                    }
                 }
                 //System.out.println("test");
                 break;//ends game, tries to cleanup

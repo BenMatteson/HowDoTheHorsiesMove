@@ -35,7 +35,7 @@ public class IterativePlayer extends Player {
         //first we wait for some value to be available at all
         while (!ready){
             try {
-                wait();
+                wait(100);//this is not guaranteed to start before the other thread signaled ready, need short timeout
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -51,7 +51,7 @@ currently supports several players including, random, negamax of arbitrary depth
   
 	sets the desired depth for the white palyer if they are using a fixed depth type player, ignored otherwise.
 	note: this is NOT for player 1, but for the white player, whichever that is. if -f is not used, this sets the depth for both players. 
-	default is 6, >10 is not advised for any player, and lower is reccomended without alpha-beta.
+	default is 6; >10 is not advised for any player, and lower is reccomended without alpha-beta.
 	
   -f <BLACK_DEPTH>
   
