@@ -109,11 +109,11 @@ public class Client {
      */
     private IMCSResponse awaitResponse() throws IOException {
         IMCSResponse response = null;
-        do {
+        //do {
             response = IMCSResponse.parse(in.readLine());
             if(response == null)
                 throw new IOException("Broken pipe");
-        } while(response == null);
+        //} while(response == null);
         return response;
     }
 
@@ -246,7 +246,6 @@ public class Client {
         awaitResponse().assertHasCode(105, 106); // game started
     }
 
-//TODO sout game id on accept too
     /**
      * Accept an offered match with the given gameId, requesting the given player.
      * @param gameId Id of the offered game to join.
@@ -257,6 +256,7 @@ public class Client {
     public void accept(String gameId, char player) throws IOException, RuntimeException {
         sendCommand(IMCSCommands.ACCEPT, gameId, player);
         awaitResponse().assertHasCode(105, 106); // game started
+        System.out.println(gameId + " game accepted");
     }
 
     /**
@@ -270,6 +270,7 @@ public class Client {
         sendCommand(IMCSCommands.ACCEPT, gameId);
         IMCSResponse gameStartResponse = awaitResponse();
         int playerCode = gameStartResponse.assertHasCode(105, 106); // game started
+        System.out.println(gameId + " game accepted");
         return (playerCode == 105) ? 'W' : 'B';
     }
 
@@ -292,7 +293,7 @@ public class Client {
         while (true) {
             line = in.readLine();
             if (line == null)
-                return null;
+                throw new IOException("Broken pipe");
             if (line.length() == 0)
                 continue;
             ch = line.charAt(0);

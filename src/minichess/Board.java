@@ -1,7 +1,7 @@
 package minichess;
 
 import java.awt.*;
-import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * Created by ben on 4/15/2017.
@@ -13,7 +13,7 @@ public class Board {
     //we cheat here and expose the piece lists because it's really expensive to copy them all the time otherwise...
     public PlayerPieces whitePieces;
     public PlayerPieces blackPieces;
-    private long zobKey = 0;
+    ZobKeyer zob;
 
     public Board() {
         board = new Piece[WIDTH][HEIGHT];
@@ -25,6 +25,7 @@ public class Board {
     public Board(String board) {
         blackPieces = new PlayerPieces();
         whitePieces = new PlayerPieces();
+        zob = new ZobKeyer(this);
         setBoard(board);
     }
 
@@ -39,7 +40,7 @@ public class Board {
     //board value based purely on piece values
     //TODO make this more discerning
     public int getValue(boolean forWhite) {
-        if(forWhite) {
+        if (forWhite) {
             return whitePieces.getTotalValue() - blackPieces.getTotalValue();
         } else
             return blackPieces.getTotalValue() - whitePieces.getTotalValue();
@@ -55,11 +56,11 @@ public class Board {
     }
 
     public Piece getSquare(Point loc) {
-        return getSquare(loc.x,loc.y);
+        return getSquare(loc.x, loc.y);
     }
 
     private Piece setSquare(char c, int x, int y) {
-        return setSquare(c,new Point(x,y));
+        return setSquare(c, new Point(x, y));
     }
 
     private Piece setSquare(char c, Point loc) {
@@ -82,22 +83,20 @@ public class Board {
             blackPieces.remove(piece);//remove pawn from pieces
             piece = new Piece(this, dest, 'q');
             blackPieces.add(piece);//add queen to pieces
-        }
-        else if (dest.y == 0 && piece.toChar() == 'P') {//white pawn promotion, top of board
+        } else if (dest.y == 0 && piece.toChar() == 'P') {//white pawn promotion, top of board
             move.setPromotion(true);
             whitePieces.remove(piece);
             piece = new Piece(this, dest, 'Q');
             whitePieces.add(piece);
-        }
-        else { //not a promotion, just move the piece
+        } else { //not a promotion, just move the piece
             piece.setLocation(dest);
         }
 
         Piece took = setSquare(piece, dest);//set piece to new location and save the piece that was captured
         move.setTook(took);
 
-        if(took.isWhite()) whitePieces.remove(took);//remove piece list if needed
-        else if(took.isBlack()) blackPieces.remove(took);
+        if (took.isWhite()) whitePieces.remove(took);//remove piece list if needed
+        else if (took.isBlack()) blackPieces.remove(took);
         ++ply;
     }
 
@@ -113,8 +112,7 @@ public class Board {
                 whitePieces.remove(piece);
                 setSquare('P', src);
                 whitePieces.add(getSquare(src));
-            }
-            else {//must be black pawn
+            } else {//must be black pawn
                 blackPieces.remove(piece);
                 setSquare('p', src);
                 blackPieces.add(getSquare(src));
@@ -126,9 +124,9 @@ public class Board {
         }
 
         Piece took = move.getTook();
-        if(took.isBlack())
+        if (took.isBlack())
             blackPieces.add(took);
-        else if(took.isWhite())
+        else if (took.isWhite())
             whitePieces.add(took);
         setSquare(took, target);
         --ply;
@@ -143,8 +141,8 @@ public class Board {
         this.board = new Piece[WIDTH][HEIGHT];
         for (int h = 0; h < HEIGHT; h++) {
             for (int w = 0; w < WIDTH; w++) {
-                char c = parts[h+1].charAt(w);
-                Piece p = new Piece(this, new Point(w,h), c);
+                char c = parts[h + 1].charAt(w);
+                Piece p = new Piece(this, new Point(w, h), c);
                 this.board[w][h] = p;
                 if (Character.isUpperCase(c))
                     whitePieces.add(p);
@@ -157,19 +155,52 @@ public class Board {
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder();
-        out.append(((getPly()+1) / 2) + " " + (isWhiteTurn() ? "W" : "B") + "\n");
-        for(int h = 0; h < HEIGHT; h++) {
-            for(int w = 0; w < WIDTH; w++) {
+        out.append(((getPly() + 1) / 2) + " " + (isWhiteTurn() ? "W" : "B") + "\n");
+        for (int h = 0; h < HEIGHT; h++) {
+            for (int w = 0; w < WIDTH; w++) {
                 out.append(board[w][h]);
             }
             out.append('\n');
         }
-        out.deleteCharAt(out.length()-1);
+        out.deleteCharAt(out.length() - 1);
         return out.toString();
     }
 
     public long hash() {
-        return zobKey;
+        return zob.getKey();
+    }
+
+    class ZobKeyer{
+        long[][] zobKeys;
+        long whiteKey;
+        long blackKey;
+        Board board;
+
+        public ZobKeyer(Board board) {
+            this.board = board;
+            zobKeys = new long[WIDTH * HEIGHT][12];
+            Random rnd = new Random();
+            for (int i = 0; i < WIDTH * HEIGHT; i++) {
+                for (int j = 0; j < 12; j++) {
+                    zobKeys[i][j] = rnd.nextLong();
+                }
+            }
+        }
+
+        long getKey() {
+            return 0; //TODO this
+        }
+
+        long updateKey(Move move) {
+            return 0; //TODO this too
+        }
+
+        void reevaluate() {
+            //TODO decide if this is worth it
+        }
+        
     }
 
 }
+
+

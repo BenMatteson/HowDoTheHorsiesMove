@@ -15,7 +15,7 @@ public class IterativePlayer extends Player {
 
     public IterativePlayer(Board board, boolean isWhite) {
         super(board, isWhite);
-        remaining = 295000000000L;//4:55
+        remaining = 297000000000L;//4:57 use 95% of available time leaves a good buffer
         ready = false;
     }
 

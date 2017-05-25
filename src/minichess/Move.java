@@ -23,6 +23,9 @@ public class Move implements Comparable<Move>{
     }
 
     public Move(String move, Board board) {
+        if(move == null){
+            throw new NullPointerException("null string in move constructor");
+        }
         String[] pts = move.split("-");
         src = new Point((pts[0].charAt(0) - 'a'),6- Integer.parseInt(pts[0].substring(1)));
         target = new Point((pts[1].charAt(0) - 'a'),6- Integer.parseInt(pts[1].substring(1)));
