@@ -42,7 +42,7 @@ public class Piece {
         if (value == 0) {
             switch (Character.toLowerCase(self)) {
                 case 'p':
-                    value = 100;
+                    value = 150;
                     break;
                 case 'r':
                     value = 500;

@@ -51,21 +51,19 @@ public class IterativePlayer extends Player {
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
         if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
-            long extra = running.predictedNext / 3;//give an extra 33% of predicted
+            long extra = running.predictedNext / 3000000;//33% of predicted as milliseconds. note: could be 0
 
-            //set a timer to give up
-            ready = false;
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
             //wait for either the timer to expire or the iteration to complete
             try {
-                wait((extra / 1000000) + 1);//add 1 to ensure not 0 which is infinite wait.
+                wait(extra + 1);//add 1 to ensure not 0 which is infinite wait.
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        //deduct time spent from our timer, we use less than 5 minutes to account for other overhead
+        //deduct time spent from our timer, we use less than 5 minutes total to account for other overhead
         remaining -= System.nanoTime() - startTime;
 
         //read the results of the last complete iteration
@@ -152,6 +150,7 @@ class PlayerThread extends Thread {
     }
 
     private int itrEvaluate(List<Move> moves, int depth, int alpha, int beta) throws InterruptedException {
+        int alphaOrig = alpha;
         if(Thread.interrupted())//done with this thread, throw it out!
             throw new InterruptedException();
         if(depth <= 0)

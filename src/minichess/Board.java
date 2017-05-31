@@ -1,7 +1,7 @@
 package minichess;
 
 import java.awt.*;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by ben on 4/15/2017.
@@ -13,19 +13,37 @@ public class Board {
     //we cheat here and expose the piece lists because it's really expensive to copy them all the time otherwise...
     public PlayerPieces whitePieces;
     public PlayerPieces blackPieces;
-    ZobKeyer zob;
+    private long[][][] zobKeys;
+    private long whiteKey, blackKey;
+    private long zobKey;
+    Map table;
 
     public Board() {
         board = new Piece[WIDTH][HEIGHT];
         ply = 0;
         blackPieces = new PlayerPieces();
         whitePieces = new PlayerPieces();
+        table = Collections.synchronizedMap(new TTable(100000));
     }
 
     public Board(String board) {
         blackPieces = new PlayerPieces();
         whitePieces = new PlayerPieces();
-        zob = new ZobKeyer(this);
+        //TODO cache this
+        zobKeys = new long[WIDTH][HEIGHT][12];
+        Random rnd = new Random();
+        for (int i = 0; i < WIDTH; i++) {
+            for (int j = 0; j < 12; j++) {
+                for (int k = 0; k < HEIGHT; k++) {
+                    zobKeys[i][k][j] = rnd.nextLong();
+                }
+            }
+        }
+        whiteKey = rnd.nextLong();
+        blackKey = rnd.nextLong();
+        table = Collections.synchronizedMap(new TTable(100000));
+
+
         setBoard(board);
     }
 
@@ -40,6 +58,9 @@ public class Board {
     //board value based purely on piece values
     //TODO make this more discerning
     public int getValue(boolean forWhite) {
+        if(table.containsKey(zobKey))
+            return ((TTableentry)table.get(zobKey)).getValue();//use value if we already calculated it to any depth
+
         if (forWhite) {
             return whitePieces.getTotalValue() - blackPieces.getTotalValue();
         } else
@@ -68,9 +89,14 @@ public class Board {
     }
 
     private Piece setSquare(Piece piece, Point loc) {
+        zobKey ^= getKeyFromPoint(loc);
+
         Piece ret = board[loc.x][loc.y];
         board[loc.x][loc.y] = piece;
         piece.setLocation(loc);
+
+        zobKey ^= getKeyFromPoint(loc);
+
         return ret;
     }
 
@@ -98,6 +124,9 @@ public class Board {
         if (took.isWhite()) whitePieces.remove(took);//remove piece list if needed
         else if (took.isBlack()) blackPieces.remove(took);
         ++ply;
+        zobKey ^= whiteKey;
+        zobKey ^= blackKey;
+
     }
 
     void undoMove(Move move) {
@@ -130,6 +159,8 @@ public class Board {
             whitePieces.add(took);
         setSquare(took, target);
         --ply;
+        zobKey ^= whiteKey;
+        zobKey ^= blackKey;
     }
 
     private void setBoard(String board) {
@@ -138,18 +169,67 @@ public class Board {
         String[] hist = parts[0].split(" ");
         int play = new Integer(hist[0]);
         ply = 2 * play - (hist[1].toLowerCase().contains("w") ? 1 : 0);
+        zobKey ^= ply % 2 == 0 ? whiteKey : blackKey;
         this.board = new Piece[WIDTH][HEIGHT];
         for (int h = 0; h < HEIGHT; h++) {
             for (int w = 0; w < WIDTH; w++) {
                 char c = parts[h + 1].charAt(w);
-                Piece p = new Piece(this, new Point(w, h), c);
+                Point loc = new Point(w, h);
+                Piece p = new Piece(this, loc, c);
                 this.board[w][h] = p;
                 if (Character.isUpperCase(c))
                     whitePieces.add(p);
                 if (Character.isLowerCase(c))
                     blackPieces.add(p);
+                zobKey ^= getKeyFromPoint(loc);
             }
         }
+    }
+
+    private long getKeyFromPoint(Point p) {
+        char c = getSquare(p).toChar();
+        int i;
+        switch (c) {
+            case 'p':
+                i=0;
+                break;
+            case 'P':
+                i=1;
+                break;
+            case 'n':
+                i=2;
+                break;
+            case 'N':
+                i=3;
+                break;
+            case 'b':
+                i=4;
+                break;
+            case 'B':
+                i=5;
+                break;
+            case 'r':
+                i=6;
+                break;
+            case 'R':
+                i=7;
+                break;
+            case 'q':
+                i=8;
+                break;
+            case 'Q':
+                i=9;
+                break;
+            case 'k':
+                i=10;
+                break;
+            case 'K':
+                i=11;
+                break;
+            default:
+                return 0;//not a piece we should be hashing, this wastes some cycles, but keeps accuracy
+        }
+        return zobKeys[p.x][p.y][i];
     }
 
     @Override
@@ -167,38 +247,62 @@ public class Board {
     }
 
     public long hash() {
-        return zob.getKey();
+        return zobKey;
     }
 
-    class ZobKeyer{
-        long[][] zobKeys;
-        long whiteKey;
-        long blackKey;
-        Board board;
+    class TTable extends LinkedHashMap<Integer, TTableentry> {
+        int capacity;
 
-        public ZobKeyer(Board board) {
-            this.board = board;
-            zobKeys = new long[WIDTH * HEIGHT][12];
-            Random rnd = new Random();
-            for (int i = 0; i < WIDTH * HEIGHT; i++) {
-                for (int j = 0; j < 12; j++) {
-                    zobKeys[i][j] = rnd.nextLong();
-                }
-            }
+        public TTable() {
+            this(100000);
         }
 
-        long getKey() {
-            return 0; //TODO this
+        public TTable(int capacity) {
+            super((capacity * 10) / 7, 1);
+            this.capacity = capacity;
         }
 
-        long updateKey(Move move) {
-            return 0; //TODO this too
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Integer, TTableentry> eldest) {
+            return size() > capacity;
+        }
+    }
+
+    class TTableentry {
+        int depth;
+        int value;
+        int flag;
+        long hash;
+
+        public TTableentry(int depth, int value, int flag) {
+            this.depth = depth;
+            this.value = value;
+            this.flag = flag;
         }
 
-        void reevaluate() {
-            //TODO decide if this is worth it
+        public int getDepth() {
+            return depth;
         }
-        
+
+        public void setDepth(int depth) {
+            this.depth = depth;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public void setValue(int value) {
+            this.value = value;
+        }
+
+        public int isFlag() {
+            return flag;
+        }
+
+        public void setFlag(int flag) {
+            this.flag = flag;
+        }
     }
 
 }
