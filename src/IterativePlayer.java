@@ -150,12 +150,32 @@ class PlayerThread extends Thread {
     }
 
     private int itrEvaluate(List<Move> moves, int depth, int alpha, int beta) throws InterruptedException {
-        int alphaOrig = alpha;
         if(Thread.interrupted())//done with this thread, throw it out!
             throw new InterruptedException();
         if(depth <= 0)
             return board.getValue(); // called from a leaf, just use heuristic valuation of board
 
+        int alphaOrig = alpha;
+        Map ttable = board.getTable();
+        TTableEntry entry;
+        boolean newEntry = false;
+        if(ttable.containsKey(board.hash())) {
+            entry = (TTableEntry) ttable.get(board.hash());
+            if(entry.getKey() == board.key() && entry.getDepth() >= depth) {
+                if(entry.getFlag() == 0)//exact
+                    return entry.getValue();
+                else if (entry.getFlag() < 0)//lower bound
+                    alpha = Math.max(alpha, entry.getValue());
+                else if (entry.getFlag() > 0)//upper bound
+                    beta = Math.min(beta, entry.getValue());
+                if (alpha >= beta)
+                    return entry.getValue();
+            }
+        }
+        else {
+            newEntry = true;
+            entry = new TTableEntry(board.hash(), depth, 0, 0);
+        }
         PlayerPieces pieces;
         if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
             pieces = board.whitePieces;
@@ -168,7 +188,7 @@ class PlayerThread extends Thread {
         int s = moves.size();
         for (int i = 0; i < s; i++) {
             Move move = moves.get(i);
-            //*/
+        //*/
             if(move.getValue() > 9000000)
                 return 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
             //make the move to analyze the board that results
@@ -194,6 +214,19 @@ class PlayerThread extends Thread {
             //undo the move now that we've evaluated it
             move.undo(board);
         }
+
+        entry.setValue(value);
+        if(value <= alphaOrig)
+            entry.setFlag(1);
+        else if (value >= beta)
+            entry.setFlag(-1);
+        else
+            entry.setFlag(0);
+        entry.setDepth(depth);
+        if(newEntry)
+            ttable.put(board.hash(), entry);
+
+
         return value;
     }
 }

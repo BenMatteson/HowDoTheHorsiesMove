@@ -59,7 +59,7 @@ public class Board {
     //TODO make this more discerning
     public int getValue(boolean forWhite) {
         if(table.containsKey(zobKey))
-            return ((TTableentry)table.get(zobKey)).getValue();//use value if we already calculated it to any depth
+            return ((TTableEntry)table.get(zobKey)).getValue();//use value if we already calculated it to any depth
 
         if (forWhite) {
             return whitePieces.getTotalValue() - blackPieces.getTotalValue();
@@ -186,6 +186,10 @@ public class Board {
         }
     }
 
+    public Map getTable() {
+        return table;
+    }
+
     private long getKeyFromPoint(Point p) {
         char c = getSquare(p).toChar();
         int i;
@@ -246,65 +250,15 @@ public class Board {
         return out.toString();
     }
 
-    public long hash() {
+    public long key() {
         return zobKey;
     }
-
-    class TTable extends LinkedHashMap<Integer, TTableentry> {
-        int capacity;
-
-        public TTable() {
-            this(100000);
-        }
-
-        public TTable(int capacity) {
-            super((capacity * 10) / 7, 1);
-            this.capacity = capacity;
-        }
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Integer, TTableentry> eldest) {
-            return size() > capacity;
-        }
-    }
-
-    class TTableentry {
-        int depth;
-        int value;
-        int flag;
-        long hash;
-
-        public TTableentry(int depth, int value, int flag) {
-            this.depth = depth;
-            this.value = value;
-            this.flag = flag;
-        }
-
-        public int getDepth() {
-            return depth;
-        }
-
-        public void setDepth(int depth) {
-            this.depth = depth;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-        public void setValue(int value) {
-            this.value = value;
-        }
-
-        public int isFlag() {
-            return flag;
-        }
-
-        public void setFlag(int flag) {
-            this.flag = flag;
-        }
+    public int hash() {
+        return Long.hashCode(zobKey);
     }
 
 }
+
+
 
 
