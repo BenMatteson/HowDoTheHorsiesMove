@@ -1,9 +1,6 @@
 package minichess;
 
 import java.awt.*;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.*;
 
 /**
@@ -19,9 +16,11 @@ public class Board {
     private long[][][] zobKeys;
     private long whiteKey, blackKey;
     private long zobKey;
-    private Map table;
+    private TTable table;
 
-    public Board(String board, Map table) {
+
+
+    public Board(String board, TTable table) {
         this.table = table;
         blackPieces = new PlayerPieces();
         whitePieces = new PlayerPieces();
@@ -38,6 +37,7 @@ public class Board {
         whiteKey = rnd.nextLong();
         blackKey = rnd.nextLong();
         setBoard(board);
+
     }
 
     public int getPly() {
@@ -51,10 +51,11 @@ public class Board {
     //board value based purely on piece values
     //TODO make this more discerning
     public int getValue(boolean forWhite) {
-        if(table != null)
-            if(table.containsKey(zobKey))
-                return ((TTableEntry)table.get(zobKey)).getValue();//use value if we already calculated it to any depth
-
+        if(table != null){
+            TTableEntry entry = table.get(zobLow(), zobHigh());
+        if(entry != null)
+                return entry.getValue();//use value if we already calculated it to any depth
+        }
         if (forWhite) {
             return whitePieces.getTotalValue() - blackPieces.getTotalValue();
         } else
@@ -182,7 +183,7 @@ public class Board {
         }
     }
 
-    public Map getTable() {
+    public TTable getTable() {
         return table;
     }
 

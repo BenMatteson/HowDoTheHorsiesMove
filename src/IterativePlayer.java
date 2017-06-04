@@ -16,7 +16,12 @@ public class IterativePlayer extends Player {
     long turnTime;
     PlayerThread running;
     boolean ready;
-    Map table;
+    TTable table;
+
+    //best guess at branching factor, used to wait out iterations that may be almost complete
+    //the more accurate the better, but favoring low values will front load our time
+    //front loading time is probably best because better moves early lead to stronger positions later.
+    public static final int BRANCHING_FACTOR = 16;
 
     public IterativePlayer(Board board, boolean isWhite) {
         super(board, isWhite);
@@ -50,7 +55,7 @@ public class IterativePlayer extends Player {
         //then delay for the move time determined above
         try {
             if(HowDoTheHorsiesMove.buildOpen) wait();
-            Thread.sleep(turnTime / 1000000, ((int) (turnTime % 1000000)));
+            wait(turnTime / 1000000, ((int) (turnTime % 1000000)));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -58,7 +63,7 @@ public class IterativePlayer extends Player {
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
         if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
-            long extra = running.predictedNext / 2000000;//50% of predicted as milliseconds. note: could be 0
+            long extra = running.predictedNext / 3000000;//33% of predicted as milliseconds. note: could be 0
 
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
@@ -138,7 +143,7 @@ class PlayerThread extends Thread {
                 return;
             }
             itrEnd = System.nanoTime();
-            predictedNext = (itrEnd - itrStart) * 17;//best guess branching factor, the more accurate the better
+            predictedNext = (itrEnd - itrStart) * IterativePlayer.BRANCHING_FACTOR;//best guess branching factor
             Collections.sort(moves);
             move = moves.get(0);
             if(requestNotify) {
@@ -158,10 +163,11 @@ class PlayerThread extends Thread {
             }
             System.out.println(i);
         }
+        p.gotMove();
         //we wait if we've exited the loop in case the player hasn't retrieved it yet.
         while(!read){
             try {
-                sleep(1000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 return;
             }
@@ -180,14 +186,14 @@ class PlayerThread extends Thread {
             return board.getValue(); // called from a leaf, just use heuristic valuation of board
 
         int alphaOrig = alpha;
-        Map ttable = board.getTable();
+        TTable ttable = board.getTable();
         TTableEntry entry = null;
         boolean newEntry = false;
 
         if (ttable != null) {
-            if (ttable.containsKey(board.zobLow())) {
-                entry = (TTableEntry) ttable.get(board.zobLow());
-                if (entry.getKey() == board.zobHigh() && entry.getDepth() >= depth) {
+            entry = ttable.get(board.zobLow(), board.zobHigh());
+            if (entry != null) {
+                if (entry.getDepth() >= depth) {
                     if (entry.getFlag() == 0)//exact
                         return entry.getValue();
                     else if (entry.getFlag() < 0)//lower bound
@@ -199,7 +205,7 @@ class PlayerThread extends Thread {
                 }
             } else {
                 newEntry = true;
-                entry = new TTableEntry(board.zobHigh(), depth, 0, 0);
+                entry = new TTableEntry(board.zobHigh(), depth);
             }
         }
 
@@ -245,6 +251,7 @@ class PlayerThread extends Thread {
         }
 
         if(ttable != null) {
+            entry.setSize(s);
             entry.setValue(value);
             if (value <= alphaOrig)
                 entry.setFlag(1);
@@ -255,7 +262,7 @@ class PlayerThread extends Thread {
             entry.setDepth(Math.max(depth, entry.getDepth()));
             //if(entry.getFlag() == 0)
                 if (newEntry)
-                    ttable.put(board.zobLow(), entry);
+                    ttable.set(board.zobLow(), entry);
             //else
                 //ttable.remove(board.zobLow());
         }

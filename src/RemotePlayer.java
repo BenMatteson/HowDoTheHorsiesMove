@@ -1,6 +1,5 @@
 import minichess.Board;
 import minichess.Move;
-import minichess.PlayerPieces;
 
 import java.io.IOException;
 

@@ -1,12 +1,8 @@
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import minichess.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by ben on 4/27/2017.
@@ -28,9 +24,9 @@ public class HowDoTheHorsiesMove {
     private static Client client = null;
     private static Board board;
     private static boolean useTable = false;
-    private static Map table;
+    private static TTable table;
 
-    public static Boolean buildOpen = false;
+    public static final Boolean buildOpen = false;
 
     public static void main(String[] args) {
 
@@ -101,14 +97,14 @@ public class HowDoTheHorsiesMove {
             try {//try to load table from file
                 FileInputStream fin = new FileInputStream("TTable.ser");
                 ObjectInputStream ois = new ObjectInputStream(fin);
-                table = ((Map) ois.readObject());
+                table = ((TTable) ois.readObject());
             } catch (IOException e) {
                 System.err.println("no initial data found");
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
             if (table == null)
-                table = Collections.synchronizedMap(new TTable(1000000));
+                table = new TTable(20);//2^20
         }
 
         //region #server connection
@@ -143,7 +139,7 @@ public class HowDoTheHorsiesMove {
                 }
             } catch (IOException io) {
                 System.err.println("Error connecting to server, please check arguments and retry");
-                System.err.println(io);
+                io.printStackTrace();
             }
         }
         //endregion

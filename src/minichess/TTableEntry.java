@@ -7,12 +7,11 @@ public class TTableEntry implements Serializable {
     byte flag;
     int value;
     int key;
+    int size;
 
-    public TTableEntry(int key, int depth, int value, int flag) {
+    public TTableEntry(int key, int depth) {
         this.key = key;
         this.depth = ((byte)depth);
-        this.value = value;
-        this.flag = ((byte)flag);
     }
 
     public int getDepth() {
@@ -37,6 +36,14 @@ public class TTableEntry implements Serializable {
 
     public void setFlag(int flag) {
         this.flag = ((byte)flag);
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public int getKey() {
