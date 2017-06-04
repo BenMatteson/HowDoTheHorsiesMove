@@ -30,6 +30,11 @@ public class RandomPlayer extends Player{
             return null;
         Move[] mvArr = new Move[moves.size()];
         Random rnd = new Random();
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return moves.toArray(mvArr)[rnd.nextInt(moves.size())];
     }
 }

@@ -1,16 +1,18 @@
 package minichess;
 
-public class TTableEntry {
-    int depth;
-    int value;
-    int flag;
-    long key;
+import java.io.Serializable;
 
-    public TTableEntry(long key, int depth, int value, int flag) {
+public class TTableEntry implements Serializable {
+    byte depth;
+    byte flag;
+    int value;
+    int key;
+
+    public TTableEntry(int key, int depth, int value, int flag) {
         this.key = key;
-        this.depth = depth;
+        this.depth = ((byte)depth);
         this.value = value;
-        this.flag = flag;
+        this.flag = ((byte)flag);
     }
 
     public int getDepth() {
@@ -18,7 +20,7 @@ public class TTableEntry {
     }
 
     public void setDepth(int depth) {
-        this.depth = depth;
+        this.depth = ((byte)depth);
     }
 
     public int getValue() {
@@ -34,10 +36,11 @@ public class TTableEntry {
     }
 
     public void setFlag(int flag) {
-        this.flag = flag;
+        this.flag = ((byte)flag);
     }
 
-    public long getKey() {
+    public int getKey() {
         return key;
     }
+
 }

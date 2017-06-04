@@ -1,6 +1,12 @@
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import minichess.*;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by ben on 4/27/2017.
@@ -20,10 +26,15 @@ public class HowDoTheHorsiesMove {
     private static int whiteDepth = 6;
     private static int blackDepth = -1;
     private static Client client = null;
-    private static Board board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK");
+    private static Board board;
+    private static boolean useTable = false;
+    private static Map table;
+
+    public static Boolean buildOpen = false;
 
     public static void main(String[] args) {
 
+        //region #args
         //parse args, can use form "-xyz x_add z_add", or "-x x_add -y -z z_add" or any combination
         for (int i = 0; i < args.length; ++i) {
             String s = args[i].toLowerCase();
@@ -73,6 +84,9 @@ public class HowDoTheHorsiesMove {
                         case 'f':
                             blackDepth = Integer.parseInt(args[++i]);
                             break;
+                        case 'h':
+                            useTable = true;
+                            break;
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
                     }
@@ -81,7 +95,23 @@ public class HowDoTheHorsiesMove {
         }
         if (blackDepth <= -1) blackDepth = whiteDepth; //allow using -d to set depth for either player in remote game
         //we allow setting 0 to run it as a pure heuristic player
+        //endregion
 
+        if (useTable) {
+            try {//try to load table from file
+                FileInputStream fin = new FileInputStream("TTable.ser");
+                ObjectInputStream ois = new ObjectInputStream(fin);
+                table = ((Map) ois.readObject());
+            } catch (IOException e) {
+                System.err.println("no initial data found");
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            if (table == null)
+                table = Collections.synchronizedMap(new TTable(1000000));
+        }
+
+        //region #server connection
         //set up server connection unless playing local game
         if(!local) {
             if(pass == "") {
@@ -116,7 +146,11 @@ public class HowDoTheHorsiesMove {
                 System.err.println(io);
             }
         }
+        //endregion
 
+        board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK", table);
+
+        //region #Gameplay
         //create players and play the game
         Player white = getPlayerType(board, true, playerType, whiteDepth);
         Player black = getPlayerType(board, false, player2Type, blackDepth);
@@ -187,6 +221,7 @@ public class HowDoTheHorsiesMove {
             ((IterativePlayer) black).terminate();
         }
         catch (Exception e) {}
+        //endregion
     }
 
     private static void switchColor() {

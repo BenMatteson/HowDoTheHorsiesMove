@@ -1,5 +1,8 @@
 import minichess.*;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.*;
 
 
@@ -7,16 +10,19 @@ import java.util.*;
  * Created by ben on 5/14/2017.
  */
 
+
 public class IterativePlayer extends Player {
     long remaining;
     long turnTime;
     PlayerThread running;
     boolean ready;
+    Map table;
 
     public IterativePlayer(Board board, boolean isWhite) {
         super(board, isWhite);
         remaining = 297000000000L;//4:57 use 95% of available time leaves a good buffer
         ready = false;
+        table = board.getTable();
     }
 
     @Override
@@ -29,7 +35,7 @@ public class IterativePlayer extends Player {
             running.interrupt();
 
         //start thread to calculate move
-        running = new PlayerThread(new Board(board.toString()), isWhite, this);
+        running = new PlayerThread(new Board(board.toString(), board.getTable()), isWhite, this);
         running.start();
 
         //first we wait for some value to be available at all
@@ -43,6 +49,7 @@ public class IterativePlayer extends Player {
 
         //then delay for the move time determined above
         try {
+            if(HowDoTheHorsiesMove.buildOpen) wait();
             Thread.sleep(turnTime / 1000000, ((int) (turnTime % 1000000)));
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -51,7 +58,7 @@ public class IterativePlayer extends Player {
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
         if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
-            long extra = running.predictedNext / 3000000;//33% of predicted as milliseconds. note: could be 0
+            long extra = running.predictedNext / 2000000;//50% of predicted as milliseconds. note: could be 0
 
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
@@ -63,11 +70,18 @@ public class IterativePlayer extends Player {
             }
         }
 
-        //deduct time spent from our timer, we use less than 5 minutes total to account for other overhead
-        remaining -= System.nanoTime() - startTime;
-
         //read the results of the last complete iteration
-        return running.getMove();
+        Move ret = running.getMove();
+
+        //restart the thread to reflect that the active player has chosen a move.
+        running.interrupt();
+        running = new PlayerThread(new Board(board.toString(), board.getTable()), isWhite, this);
+        running.start();
+
+        //deduct time spent from our timer, we use less than 5 minutes total to account for other overhead
+        //done immediately before return for most accurate value
+        remaining -= System.nanoTime() - startTime;
+        return ret;
     }
 
     synchronized void gotMove() {
@@ -116,7 +130,7 @@ class PlayerThread extends Thread {
             p.addMovesToList(moves);
         }
         //Collections.sort(moves);//we skip this sort since we recycle the move list anyway, the deepening does it
-        for (int i = 1; i < 80; i++) {
+        for (int i = 4; i < 80; i++) {
             itrStart = System.nanoTime();
             try {
                 itrEvaluate(moves, i, -10000000, 10000000);
@@ -124,7 +138,7 @@ class PlayerThread extends Thread {
                 return;
             }
             itrEnd = System.nanoTime();
-            predictedNext = (itrEnd - itrStart) * 17;//guess at a good branching factor. seems like it hits often, probably good?
+            predictedNext = (itrEnd - itrStart) * 17;//best guess branching factor, the more accurate the better
             Collections.sort(moves);
             move = moves.get(0);
             if(requestNotify) {
@@ -132,7 +146,17 @@ class PlayerThread extends Thread {
                 requestNotify = false;
             }
 
-            //System.out.println(i);
+            if(HowDoTheHorsiesMove.buildOpen) {
+                try {
+                    FileOutputStream fout = new FileOutputStream("TTable.ser");
+                    ObjectOutputStream oos = new ObjectOutputStream(fout);
+                    oos.writeObject(board.getTable());
+                } catch (IOException e) {
+                    System.err.println("error saving TTable");
+                    e.printStackTrace();
+                }
+            }
+            System.out.println(i);
         }
         //we wait if we've exited the loop in case the player hasn't retrieved it yet.
         while(!read){
@@ -150,32 +174,35 @@ class PlayerThread extends Thread {
     }
 
     private int itrEvaluate(List<Move> moves, int depth, int alpha, int beta) throws InterruptedException {
-        if(Thread.interrupted())//done with this thread, throw it out!
+        if (Thread.interrupted())//done with this thread, throw it out!
             throw new InterruptedException();
-        if(depth <= 0)
+        if (depth <= 0)
             return board.getValue(); // called from a leaf, just use heuristic valuation of board
 
         int alphaOrig = alpha;
         Map ttable = board.getTable();
-        TTableEntry entry;
+        TTableEntry entry = null;
         boolean newEntry = false;
-        if(ttable.containsKey(board.hash())) {
-            entry = (TTableEntry) ttable.get(board.hash());
-            if(entry.getKey() == board.key() && entry.getDepth() >= depth) {
-                if(entry.getFlag() == 0)//exact
-                    return entry.getValue();
-                else if (entry.getFlag() < 0)//lower bound
-                    alpha = Math.max(alpha, entry.getValue());
-                else if (entry.getFlag() > 0)//upper bound
-                    beta = Math.min(beta, entry.getValue());
-                if (alpha >= beta)
-                    return entry.getValue();
+
+        if (ttable != null) {
+            if (ttable.containsKey(board.zobLow())) {
+                entry = (TTableEntry) ttable.get(board.zobLow());
+                if (entry.getKey() == board.zobHigh() && entry.getDepth() >= depth) {
+                    if (entry.getFlag() == 0)//exact
+                        return entry.getValue();
+                    else if (entry.getFlag() < 0)//lower bound
+                        alpha = Math.max(alpha, entry.getValue());
+                    else if (entry.getFlag() > 0)//upper bound
+                        beta = Math.min(beta, entry.getValue());
+                    if (alpha >= beta)
+                        return entry.getValue();
+                }
+            } else {
+                newEntry = true;
+                entry = new TTableEntry(board.zobHigh(), depth, 0, 0);
             }
         }
-        else {
-            newEntry = true;
-            entry = new TTableEntry(board.hash(), depth, 0, 0);
-        }
+
         PlayerPieces pieces;
         if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
             pieces = board.whitePieces;
@@ -189,8 +216,10 @@ class PlayerThread extends Thread {
         for (int i = 0; i < s; i++) {
             Move move = moves.get(i);
         //*/
-            if(move.getValue() > 9000000)
-                return 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
+            if(move.getValue() > 9000000) {
+                value = 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
+                break;
+            }
             //make the move to analyze the board that results
             move.make(board);
             //create list of possible moves available to opponent
@@ -215,17 +244,21 @@ class PlayerThread extends Thread {
             move.undo(board);
         }
 
-        entry.setValue(value);
-        if(value <= alphaOrig)
-            entry.setFlag(1);
-        else if (value >= beta)
-            entry.setFlag(-1);
-        else
-            entry.setFlag(0);
-        entry.setDepth(depth);
-        if(newEntry)
-            ttable.put(board.hash(), entry);
-
+        if(ttable != null) {
+            entry.setValue(value);
+            if (value <= alphaOrig)
+                entry.setFlag(1);
+            else if (value >= beta)
+                entry.setFlag(-1);
+            else
+                entry.setFlag(0);
+            entry.setDepth(Math.max(depth, entry.getDepth()));
+            //if(entry.getFlag() == 0)
+                if (newEntry)
+                    ttable.put(board.zobLow(), entry);
+            //else
+                //ttable.remove(board.zobLow());
+        }
 
         return value;
     }

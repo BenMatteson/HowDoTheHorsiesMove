@@ -20,7 +20,8 @@ public class RemotePlayer extends Player {
             return new Move(client.getMove(), board);
         }
         catch (IOException io) {
-            return getPlay();//try again?
+            io.printStackTrace();//try again?
+            return null;
         }
         catch (NullPointerException e) {
             e.printStackTrace();

@@ -1,6 +1,9 @@
 package minichess;
 
 import java.awt.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.*;
 
 /**
@@ -16,17 +19,10 @@ public class Board {
     private long[][][] zobKeys;
     private long whiteKey, blackKey;
     private long zobKey;
-    Map table;
+    private Map table;
 
-    public Board() {
-        board = new Piece[WIDTH][HEIGHT];
-        ply = 0;
-        blackPieces = new PlayerPieces();
-        whitePieces = new PlayerPieces();
-        table = Collections.synchronizedMap(new TTable(100000));
-    }
-
-    public Board(String board) {
+    public Board(String board, Map table) {
+        this.table = table;
         blackPieces = new PlayerPieces();
         whitePieces = new PlayerPieces();
         //TODO cache this
@@ -41,9 +37,6 @@ public class Board {
         }
         whiteKey = rnd.nextLong();
         blackKey = rnd.nextLong();
-        table = Collections.synchronizedMap(new TTable(100000));
-
-
         setBoard(board);
     }
 
@@ -58,8 +51,9 @@ public class Board {
     //board value based purely on piece values
     //TODO make this more discerning
     public int getValue(boolean forWhite) {
-        if(table.containsKey(zobKey))
-            return ((TTableEntry)table.get(zobKey)).getValue();//use value if we already calculated it to any depth
+        if(table != null)
+            if(table.containsKey(zobKey))
+                return ((TTableEntry)table.get(zobKey)).getValue();//use value if we already calculated it to any depth
 
         if (forWhite) {
             return whitePieces.getTotalValue() - blackPieces.getTotalValue();
@@ -104,12 +98,14 @@ public class Board {
         Piece piece = setSquare('.', move.getSrc());//grab the piece off the board
         Point dest = move.getTarget();//cache this point 'cause we use it a lot
         //check for promotion
-        if (dest.y == HEIGHT - 1 && piece.toChar() == 'p') {//black pawn promotion, bottom of board
+        if (dest.y == HEIGHT - 1//index of bottom of board
+                && piece.toChar() == 'p') {//black pawn up for promotion
             move.setPromotion(true);
             blackPieces.remove(piece);//remove pawn from pieces
             piece = new Piece(this, dest, 'q');
             blackPieces.add(piece);//add queen to pieces
-        } else if (dest.y == 0 && piece.toChar() == 'P') {//white pawn promotion, top of board
+        } else if (dest.y == 0 //index of top of board
+                && piece.toChar() == 'P') {//white pawn up for promotion
             move.setPromotion(true);
             whitePieces.remove(piece);
             piece = new Piece(this, dest, 'Q');
@@ -169,7 +165,7 @@ public class Board {
         String[] hist = parts[0].split(" ");
         int play = new Integer(hist[0]);
         ply = 2 * play - (hist[1].toLowerCase().contains("w") ? 1 : 0);
-        zobKey ^= ply % 2 == 0 ? whiteKey : blackKey;
+        zobKey ^= (ply % 2 == 0) ? whiteKey : blackKey;
         this.board = new Piece[WIDTH][HEIGHT];
         for (int h = 0; h < HEIGHT; h++) {
             for (int w = 0; w < WIDTH; w++) {
@@ -250,11 +246,11 @@ public class Board {
         return out.toString();
     }
 
-    public long key() {
-        return zobKey;
+    public int zobHigh() {
+        return (int) (zobKey >>> 32);
     }
-    public int hash() {
-        return Long.hashCode(zobKey);
+    public int zobLow() {
+        return (int)zobKey;
     }
 
 }

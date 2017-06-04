@@ -10,7 +10,7 @@ public class TTable extends LinkedHashMap<Integer, TTableEntry> {
     int capacity;
 
     public TTable(int capacity) {
-        super((capacity * 10) / 7, 1);
+        super(capacity -= 5, 1);
         this.capacity = capacity;
     }
 
@@ -18,5 +18,5 @@ public class TTable extends LinkedHashMap<Integer, TTableEntry> {
     protected boolean removeEldestEntry(Map.Entry<Integer, TTableEntry> eldest) {
         return size() > capacity;
     }
-}
 
+}

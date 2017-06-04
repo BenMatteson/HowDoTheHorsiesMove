@@ -1,7 +1,6 @@
 package minichess;
 
 import java.awt.*;
-import java.util.*;
 import java.util.List;
 
 /**
@@ -13,18 +12,23 @@ public class Piece {
     private boolean isWhite = false;
     private boolean isBlack = false;
     private int value;
-    private Point location;
+    private int locx;
+    private int locy;
 
     public Piece() {
-        board = null;//only need these for pieces that move
-        location = null;
+        board = null;//only need this for pieces that move
 
         self = '.';
     }
 
     public Piece(Board board, Point location, char c) {
+        this(board, location.x, location.y, c);
+    }
+
+    public Piece(Board board, int xloc, int yloc, char c) {
         this.board = board;
-        this.location = location;
+        this.locx = xloc;
+        locy = yloc;
         self = c;
         isWhite = Character.isUpperCase(c);
         isBlack = Character.isLowerCase(c);
@@ -76,7 +80,13 @@ public class Piece {
     }
 
     public void setLocation(Point location) {
-        this.location = location;
+        this.locx = location.x;
+        locy = location.y;
+    }
+
+    public void setLocation(int x, int y) {
+        this.locx = x;
+        locy = y;
     }
 
     public void addMovesToList(List<Move> moves) {
@@ -130,21 +140,23 @@ public class Piece {
     private void symScan(List<Move> moves, int dx, int dy, boolean stopShort, int capture, int steps) { // also used at 2 steps for pawn attacks
         if(steps <= 0) return;
         scanMoves(moves, dx, dy, stopShort, capture);
-        symScan(moves, -dy, dx, stopShort, capture, steps - 1);
+        symScan(moves, -dy, dx, stopShort, capture, --steps);
     }
 
     private void scanMoves(List<Move> moves, int dx, int dy, boolean stopShort, int capture) {
         int x, y;
-        x = location.x;
-        y = location.y;
-        int xbound = Board.WIDTH - 1;
-        int ybound = Board.HEIGHT - 1;
+        x = locx;
+        y = locy;
+        int xBound = Board.WIDTH - 1;
+        int yBound = Board.HEIGHT - 1;
         do{
             x+=dx;
             y+=dy;
-            if(x > xbound || y > ybound || x < 0 || y < 0)
+            if(x > xBound || y > yBound || x < 0 || y < 0)
                 break;
+
             Piece target = board.getSquare(x, y);
+
             if(target.toChar() != '.') {
                 if (isWhite == target.isWhite || capture == 0) //same color or can't cap
                     break;
@@ -152,7 +164,8 @@ public class Piece {
             }
             else if(capture == -1)
                 break;
-            moves.add(new Move(location, new Point(x, y), board));
+
+            moves.add(new Move(locx, locy, x, y));
         } while (!stopShort);
     }
 }
