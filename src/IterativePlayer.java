@@ -226,7 +226,9 @@ class PlayerThread extends Thread {
             deepsize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
 
             //look deeper for moves that involve capturing pieces
-            //TODO this only works with better board evaluation
+            //tied to a flag for more granular board evaluation, otherwise it does bad things
+            //but I don't know if I like the extra step to the search, so it's not always on
+            //will decrement depth normally except when the last move is a capture otherwise
             int active = (depth <= 1 && move.wasCapture() && Board.extra) ? 0 : 1;//0 if a piece was captured by the last move
 
             //recur on the evaluator to value this move
@@ -248,7 +250,7 @@ class PlayerThread extends Thread {
 
         //store our info in the ttable
         if(ttable != null) {
-            entry.setSize(deepsize);//TODO deepsize may be overly granular, keeping old entries too long
+            entry.setSize(deepsize);
             entry.setValue(bestValue);
             if (bestValue <= alphaOrig)
                 entry.setFlag(1);

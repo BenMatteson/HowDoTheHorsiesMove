@@ -28,7 +28,7 @@ public class Board {
         whitePieces = new PlayerPieces();
         //TODO cache this
         zobKeys = new long[WIDTH][HEIGHT][12];
-        Random rnd = new Random();
+        Random rnd = new Random(480312325	);
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < 12; j++) {
                 for (int k = 0; k < HEIGHT; k++) {
