@@ -7,6 +7,15 @@ import java.util.List;
  * Created by ben on 5/1/2017.
  */
 public class Piece {
+
+    public static final int PAWN_VALUE = 150;
+    public static final int KING_VALUE = 10000000;//should be order(s) of magnitude > sum of all others
+    public static final int QUEEN_VALUE = 900;//can have up to 6 if all pawns promote
+    public static final int KNIGHT_VALUE = 350;
+    public static final int ROOK_VALUE = 500;
+    public static final int BISHOP_VALUE = 300;
+
+
     private Board board;
     private char self;
     private boolean isWhite = false;
@@ -42,26 +51,45 @@ public class Piece {
         return isBlack;
     }
 
+    public static int getValue(char c) {
+        switch (Character.toLowerCase(c)) {
+            case 'p':
+                return PAWN_VALUE;
+            case 'r':
+                return ROOK_VALUE;
+            case 'b':
+                return BISHOP_VALUE;
+            case 'n':
+                return KNIGHT_VALUE;
+            case 'q':
+                return QUEEN_VALUE;
+            case 'k':
+                return KING_VALUE;
+            default:
+                return 0;
+        }
+    }
+
     public int getValue() {
         if (value == 0) {
             switch (Character.toLowerCase(self)) {
                 case 'p':
-                    value = 150;
+                    value = PAWN_VALUE;
                     break;
                 case 'r':
-                    value = 500;
+                    value = ROOK_VALUE;
                     break;
                 case 'b':
-                    value = 300;
+                    value = BISHOP_VALUE;
                     break;
                 case 'n':
-                    value = 350;
+                    value = KNIGHT_VALUE;
                     break;
                 case 'q':
-                    value = 900;
+                    value = QUEEN_VALUE;
                     break;
                 case 'k':
-                    value = 10000000;
+                    value = KING_VALUE;
                     break;
                 default:
                     value = 0;

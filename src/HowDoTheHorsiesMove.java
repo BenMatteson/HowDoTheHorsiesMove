@@ -201,11 +201,11 @@ public class HowDoTheHorsiesMove {
             System.out.println(board.getValue() + "\n");
 
             //detect if it's a win, despite warnings, just using very large value for king to determine wins
-            if (board.getValue(true) > 1000000) {
+            if (board.blackPieces.getTotalValue() <  Piece.KING_VALUE) {
                 System.out.println(white + " wins!");
                 break;
             }
-            if (board.getValue(false) > 1000000) {
+            if (board.whitePieces.getTotalValue() < Piece.KING_VALUE) {
                 System.out.println(black + " wins!");
                 break;
             }
