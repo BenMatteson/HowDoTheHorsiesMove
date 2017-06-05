@@ -165,7 +165,7 @@ public class Piece {
             else if(capture == -1)
                 break;
 
-            moves.add(new Move(locx, locy, x, y));
+            moves.add(new Move(locx, locy, x, y, board));
         } while (!stopShort);
     }
 }

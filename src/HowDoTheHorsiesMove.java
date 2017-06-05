@@ -25,8 +25,9 @@ public class HowDoTheHorsiesMove {
     private static Board board;
     private static boolean useTable = false;
     private static TTable table;
+    private static boolean useSelectiveSearch = false;
 
-    public static final Boolean buildOpen = false;
+    static final Boolean buildOpen = false;
 
     public static void main(String[] args) {
 
@@ -82,6 +83,9 @@ public class HowDoTheHorsiesMove {
                             break;
                         case 'h':
                             useTable = true;
+                            break;
+                        case 'e':
+                            useSelectiveSearch = true;
                             break;
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
@@ -145,6 +149,7 @@ public class HowDoTheHorsiesMove {
         //endregion
 
         board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK", table);
+        Board.extra = useSelectiveSearch;//flag for search method that completes capture chains, uses more granular board eval.
 
         //region #Gameplay
         //create players and play the game

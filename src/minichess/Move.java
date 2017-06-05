@@ -17,16 +17,16 @@ public class Move implements Comparable<Move>{
     private int value;
     private boolean promotion;
 
-    public Move(Point piece, Point target) {
-        this((byte)piece.x, (byte)piece.y, (byte)target.x, (byte)target.y);
+    public Move(Point piece, Point target, Board board) {
+        this((byte)piece.x, (byte)piece.y, (byte)target.x, (byte)target.y, board);
     }
 
-    public Move(byte piecex, byte piecey, byte targetx, byte targety) {
+    public Move(byte piecex, byte piecey, byte targetx, byte targety, Board board) {
         this.srcx = piecex;
         this.srcy = piecey;
         this.targetx = targetx;
         this.targety = targety;
-        value=0;// = board.getSquare(target).getValue();
+        value = board.getSquare(targetx, targety).getValue();
         promotion = false;
     }
 

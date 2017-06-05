@@ -2,6 +2,7 @@ package minichess;
 
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 /**
  * Created by ben on 4/15/2017.
@@ -18,6 +19,7 @@ public class Board {
     private long zobKey;
     private TTable table;
 
+    public static boolean extra = true;
 
 
     public Board(String board, TTable table) {
@@ -51,15 +53,24 @@ public class Board {
     //board value based purely on piece values
     //TODO make this more discerning
     public int getValue(boolean forWhite) {
-        if(table != null){
+        //check ttable if available
+        if(table != null) {
             TTableEntry entry = table.get(zobLow(), zobHigh());
         if(entry != null)
                 return entry.getValue();//use value if we already calculated it to any depth
         }
+
+        int value = 0;
+
+        //mobility
+        if(extra) {
+            value += generateMoves(forWhite).size() - generateMoves(!forWhite).size();
+        }
+
         if (forWhite) {
-            return whitePieces.getTotalValue() - blackPieces.getTotalValue();
+            return value + whitePieces.getTotalValue() - blackPieces.getTotalValue();
         } else
-            return blackPieces.getTotalValue() - whitePieces.getTotalValue();
+            return value + blackPieces.getTotalValue() - whitePieces.getTotalValue();
     }
 
     // board value for active player
@@ -185,6 +196,23 @@ public class Board {
 
     public TTable getTable() {
         return table;
+    }
+
+    public ArrayList<Move> generateMoves() {
+        return generateMoves(isWhiteTurn());
+    }
+
+    public ArrayList<Move> generateMoves(boolean forWhite) {
+    ArrayList<Move> moves = new ArrayList<>(30);//30 is probably about optimal
+    PlayerPieces pieces;
+    if(forWhite)
+        pieces = whitePieces;
+    else
+        pieces = blackPieces;
+    for (Piece p : pieces) {
+        p.addMovesToList(moves);
+    }
+    return moves;
     }
 
     private long getKeyFromPoint(Point p) {

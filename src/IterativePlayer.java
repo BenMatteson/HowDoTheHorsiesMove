@@ -127,15 +127,7 @@ class PlayerThread extends Thread {
 
     @Override
     public void run() {
-        moves = new ArrayList<>(30);//30 is probably about optimal
-        PlayerPieces pieces;
-        if(isWhite)
-            pieces = board.whitePieces;
-        else
-            pieces = board.blackPieces;
-        for (Piece p : pieces) {
-            p.addMovesToList(moves);
-        }
+        moves = board.generateMoves();
         //Collections.sort(moves);//we skip this sort since we recycle the move list anyway, the deepening does it
         for (int i = 0; i < 80; i++) {
             itrStart = System.nanoTime();
@@ -196,8 +188,7 @@ class PlayerThread extends Thread {
         //get info from ttable
         if (ttable != null) {
             entry = ttable.get(board.zobLow(), board.zobHigh());
-            if (entry != null) {
-                if (entry.getDepth() >= depth) {
+            if (entry != null && entry.getDepth() >= depth) {
                     if (entry.getFlag() == 0)//exact
                         return entry.getValue();
                     else if (entry.getFlag() < 0)//lower bound
@@ -206,7 +197,6 @@ class PlayerThread extends Thread {
                         beta = Math.min(beta, entry.getValue());
                     if (alpha >= beta)
                         return entry.getValue();
-                }
             } else {
                 newEntry = true;
                 entry = new TTableEntry(board.zobHigh(), depth);
@@ -214,43 +204,37 @@ class PlayerThread extends Thread {
         }
 
         //do the search
-        PlayerPieces pieces;
-        if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
-            pieces = board.whitePieces;
-        else
-            pieces = board.blackPieces;
-        int value = Integer.MIN_VALUE;
-        /*
-        for (Move move : moves) {
-        /*/
+        int bestValue = Integer.MIN_VALUE;
         int s = moves.size();
         int deepsize = s;
+        Collections.sort(moves);
+        //*
+        for (Move move : moves) {
+        /*/
         for (int i = 0; i < s; i++) {
             Move move = moves.get(i);
         //*/
             if(move.getValue() > 9000000) {
-                value = 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
+                bestValue = 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
                 break;
             }
             //make the move to analyze the board that results
             move.make(board);
             //create list of possible moves available to opponent
             //30 is big enough >99.9% of the time, and not having to grow the array makes a big difference
-            List<Move> moves2 = new ArrayList<>(30);
-            for (Piece p : pieces) {
-                p.addMovesToList(moves2);
-            }
+            List<Move> moves2 = board.generateMoves();
             deepsize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
 
             //look deeper for moves that involve capturing pieces
-            int active = 1;// (depth <= 1 && move.wasCapture()) ? 0 : 1;//0 if a piece was captured by the last move
+            //TODO this only works with better board evaluation
+            int active = (depth <= 1 && move.wasCapture() && Board.extra) ? 0 : 1;//0 if a piece was captured by the last move
 
             //recur on the evaluator to value this move
             int moveVal = -itrEvaluate(moves2, depth - active, -beta, -alpha);
             moves2 = null;
             move.setValue(moveVal);
             //set the value to the highest seen in this branch
-            value = Math.max(moveVal, value);
+            bestValue = Math.max(moveVal, bestValue);
             //set the alpha to the highest seen overall (that wasn't pruned by early return above)
             alpha = Math.max(alpha, moveVal);
             //undo the move now that we've evaluated it
@@ -265,10 +249,10 @@ class PlayerThread extends Thread {
         //store our info in the ttable
         if(ttable != null) {
             entry.setSize(deepsize);//TODO deepsize may be overly granular, keeping old entries too long
-            entry.setValue(value);
-            if (value <= alphaOrig)
+            entry.setValue(bestValue);
+            if (bestValue <= alphaOrig)
                 entry.setFlag(1);
-            else if (value >= beta)
+            else if (bestValue >= beta)
                 entry.setFlag(-1);
             else
                 entry.setFlag(0);
@@ -280,6 +264,6 @@ class PlayerThread extends Thread {
                 //ttable.remove(board.zobLow());
         }
 
-        return value;
+        return bestValue;
     }
 }
