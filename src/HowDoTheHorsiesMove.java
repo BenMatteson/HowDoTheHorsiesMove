@@ -111,6 +111,9 @@ public class HowDoTheHorsiesMove {
                 table = new TTable(20);//2^20
         }
 
+        board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK", table);
+        Board.extra = useSelectiveSearch;//flag for search method that completes capture chains, uses more granular board eval.
+
         //region #server connection
         //set up server connection unless playing local game
         if(!local) {
@@ -147,9 +150,6 @@ public class HowDoTheHorsiesMove {
             }
         }
         //endregion
-
-        board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK", table);
-        Board.extra = useSelectiveSearch;//flag for search method that completes capture chains, uses more granular board eval.
 
         //region #Gameplay
         //create players and play the game
