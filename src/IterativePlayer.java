@@ -21,13 +21,17 @@ public class IterativePlayer extends Player {
     //best guess at branching factor, used to wait out iterations that may be almost complete
     //the more accurate the better, but favoring low values will front load our time
     //front loading time is probably best because better moves early lead to stronger positions later.
-    public static final int BRANCHING_FACTOR = 16;
+    public static final int BRANCHING_FACTOR = 10;
 
     public IterativePlayer(Board board, boolean isWhite) {
         super(board, isWhite);
         remaining = 297000000000L;//4:57 use 95% of available time leaves a good buffer
         ready = false;
         table = board.getTable();
+
+        //start thinking immediately (mostly for if we're black)
+        running = new PlayerThread(new Board(board.toString(), board.getTable()), isWhite, this);
+        running.start();
     }
 
     @Override
@@ -36,10 +40,9 @@ public class IterativePlayer extends Player {
         ready = false;
         turnTime = remaining / ((82 - board.getPly()) / 2);//remaining time / number of moves to make
 
-        if(running != null)  //stop previous thread if there is one
-            running.interrupt();
-
-        //start thread to calculate move
+        //stop previous thread
+        running.interrupt();
+        //start new thread to calculate move
         running = new PlayerThread(new Board(board.toString(), board.getTable()), isWhite, this);
         running.start();
 
@@ -54,7 +57,7 @@ public class IterativePlayer extends Player {
 
         //then delay for the move time determined above
         try {
-            if(HowDoTheHorsiesMove.buildOpen) wait();
+            if(HowDoTheHorsiesMove.buildOpen) wait();//ignore; extra for easily building opening table
             wait(turnTime / 1000000, ((int) (turnTime % 1000000)));
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -63,7 +66,7 @@ public class IterativePlayer extends Player {
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
         if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
-            long extra = running.predictedNext / 3000000;//33% of predicted as milliseconds. note: could be 0
+            long extra = running.predictedNext / 2000000;//50% of predicted as milliseconds. note: could be 0
 
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
@@ -124,7 +127,6 @@ class PlayerThread extends Thread {
 
     @Override
     public void run() {
-        int depth = 0;
         moves = new ArrayList<>(30);//30 is probably about optimal
         PlayerPieces pieces;
         if(isWhite)
@@ -135,7 +137,7 @@ class PlayerThread extends Thread {
             p.addMovesToList(moves);
         }
         //Collections.sort(moves);//we skip this sort since we recycle the move list anyway, the deepening does it
-        for (int i = 4; i < 80; i++) {
+        for (int i = 0; i < 80; i++) {
             itrStart = System.nanoTime();
             try {
                 itrEvaluate(moves, i, -10000000, 10000000);
@@ -151,6 +153,7 @@ class PlayerThread extends Thread {
                 requestNotify = false;
             }
 
+            //extra junk to build an initialized ttable to speed ou opening
             if(HowDoTheHorsiesMove.buildOpen) {
                 try {
                     FileOutputStream fout = new FileOutputStream("TTable.ser");
@@ -163,12 +166,12 @@ class PlayerThread extends Thread {
             }
             System.out.println(i);
         }
-        p.gotMove();
         //we wait if we've exited the loop in case the player hasn't retrieved it yet.
         while(!read){
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
+                p.gotMove();
+                wait(1000);
+            } catch (Exception e) {
                 return;
             }
         }
@@ -190,6 +193,7 @@ class PlayerThread extends Thread {
         TTableEntry entry = null;
         boolean newEntry = false;
 
+        //get info from ttable
         if (ttable != null) {
             entry = ttable.get(board.zobLow(), board.zobHigh());
             if (entry != null) {
@@ -209,6 +213,7 @@ class PlayerThread extends Thread {
             }
         }
 
+        //do the search
         PlayerPieces pieces;
         if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
             pieces = board.whitePieces;
@@ -219,6 +224,7 @@ class PlayerThread extends Thread {
         for (Move move : moves) {
         /*/
         int s = moves.size();
+        int deepsize = s;
         for (int i = 0; i < s; i++) {
             Move move = moves.get(i);
         //*/
@@ -234,24 +240,31 @@ class PlayerThread extends Thread {
             for (Piece p : pieces) {
                 p.addMovesToList(moves2);
             }
+            deepsize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
+
+            //look deeper for moves that involve capturing pieces
+            int active = 1;// (depth <= 1 && move.wasCapture()) ? 0 : 1;//0 if a piece was captured by the last move
+
             //recur on the evaluator to value this move
-            int moveVal = -itrEvaluate(moves2, depth - 1, -beta, -alpha);
+            int moveVal = -itrEvaluate(moves2, depth - active, -beta, -alpha);
+            moves2 = null;
             move.setValue(moveVal);
-            //if the move is better than the best in another branch, we assume we won't be allowed to reach this branch
-            if(moveVal >= beta) {
-                move.undo(board); //undo the move before we return
-                return moveVal; //prune this move, opponent shouldn't let us get here...
-            }
             //set the value to the highest seen in this branch
             value = Math.max(moveVal, value);
             //set the alpha to the highest seen overall (that wasn't pruned by early return above)
             alpha = Math.max(alpha, moveVal);
             //undo the move now that we've evaluated it
             move.undo(board);
+            //if the move is better than the best in another branch, we assume we won't be allowed to reach this branch
+            if(moveVal >= beta) {
+                break;
+            }
         }
+        moves = null;
 
+        //store our info in the ttable
         if(ttable != null) {
-            entry.setSize(s);
+            entry.setSize(deepsize);//TODO deepsize may be overly granular, keeping old entries too long
             entry.setValue(value);
             if (value <= alphaOrig)
                 entry.setFlag(1);

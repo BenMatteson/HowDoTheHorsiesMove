@@ -56,3 +56,7 @@ currently supports several players including, random, negamax of arbitrary depth
   -f <BLACK_DEPTH>
   
 	sets the depth for the black player. if this flag is not used, the value will match that of the white player. see -d for more.
+	
+  -h
+  
+    sets the iterative player to use the transposition table

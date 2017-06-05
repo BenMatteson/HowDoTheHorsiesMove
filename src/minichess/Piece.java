@@ -12,8 +12,8 @@ public class Piece {
     private boolean isWhite = false;
     private boolean isBlack = false;
     private int value;
-    private int locx;
-    private int locy;
+    private byte locx;
+    private byte locy;
 
     public Piece() {
         board = null;//only need this for pieces that move
@@ -27,8 +27,8 @@ public class Piece {
 
     public Piece(Board board, int xloc, int yloc, char c) {
         this.board = board;
-        this.locx = xloc;
-        locy = yloc;
+        this.locx = (byte)xloc;
+        locy = (byte)yloc;
         self = c;
         isWhite = Character.isUpperCase(c);
         isBlack = Character.isLowerCase(c);
@@ -52,10 +52,10 @@ public class Piece {
                     value = 500;
                     break;
                 case 'b':
-                    value = 200;
+                    value = 300;
                     break;
                 case 'n':
-                    value = 400;
+                    value = 350;
                     break;
                 case 'q':
                     value = 900;
@@ -80,13 +80,13 @@ public class Piece {
     }
 
     public void setLocation(Point location) {
-        this.locx = location.x;
-        locy = location.y;
+        this.locx = (byte)location.x;
+        locy = (byte)location.y;
     }
 
     public void setLocation(int x, int y) {
-        this.locx = x;
-        locy = y;
+        this.locx = (byte)x;
+        locy = (byte)y;
     }
 
     public void addMovesToList(List<Move> moves) {
@@ -144,7 +144,7 @@ public class Piece {
     }
 
     private void scanMoves(List<Move> moves, int dx, int dy, boolean stopShort, int capture) {
-        int x, y;
+        byte x, y;
         x = locx;
         y = locy;
         int xBound = Board.WIDTH - 1;
