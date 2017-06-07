@@ -60,3 +60,7 @@ currently supports several players including, random, negamax of arbitrary depth
   -h
   
     sets the iterative player to use the transposition table
+    
+  -:
+  
+    sets the time in seconds available to each player; only used by iterative player

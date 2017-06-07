@@ -21,11 +21,12 @@ public class IterativePlayer extends Player {
     //best guess at branching factor, used to wait out iterations that may be almost complete
     //the more accurate the better, but favoring low values will front load our time
     //front loading time is probably best because better moves early lead to stronger positions later.
-    public static final int BRANCHING_FACTOR = 10;
+    public static final int BRANCHING_FACTOR = 17;
 
-    public IterativePlayer(Board board, boolean isWhite) {
+    public IterativePlayer(Board board, boolean isWhite, int time) {
         super(board, isWhite);
-        remaining = 297000000000L;//4:57 use 95% of available time leaves a good buffer
+        //(time in seconds)*(percent to use)*(remaining factor to convert to nanoseconds)
+        remaining = time * 96 * 10000000L;
         ready = false;
         table = board.getTable();
 
@@ -66,7 +67,7 @@ public class IterativePlayer extends Player {
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
         if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
-            long extra = running.predictedNext / 2000000;//50% of predicted as milliseconds. note: could be 0
+            long extra = running.predictedNext / 3000000;//33% of predicted as milliseconds. note: could be 0
 
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
@@ -128,7 +129,6 @@ class PlayerThread extends Thread {
     @Override
     public void run() {
         moves = board.generateMoves();
-        //Collections.sort(moves);//we skip this sort since we recycle the move list anyway, the deepening does it
         for (int i = 0; i < 80; i++) {
             itrStart = System.nanoTime();
             try {
@@ -145,7 +145,7 @@ class PlayerThread extends Thread {
                 requestNotify = false;
             }
 
-            //extra junk to build an initialized ttable to speed ou opening
+            //extra junk to build an initialized ttable to speed up opening
             if(HowDoTheHorsiesMove.buildOpen) {
                 try {
                     FileOutputStream fout = new FileOutputStream("TTable.ser");
@@ -207,11 +207,12 @@ class PlayerThread extends Thread {
         int bestValue = Integer.MIN_VALUE;
         int s = moves.size();
         int deepsize = s;
+        Collections.shuffle(moves);
         Collections.sort(moves);
         //*
-        for (Move move : moves) {
+        for (Move move : moves) { //seems to be the faster option
         /*/
-        for (int i = 0; i < s; i++) {
+        for (int i = 0; i < s; i++) { //rumored to be the faster option
             Move move = moves.get(i);
         //*/
             if(move.getValue() > 9000000) {
@@ -220,8 +221,7 @@ class PlayerThread extends Thread {
             }
             //make the move to analyze the board that results
             move.make(board);
-            //create list of possible moves available to opponent
-            //30 is big enough >99.9% of the time, and not having to grow the array makes a big difference
+            //get list of possible moves available to opponent
             List<Move> moves2 = board.generateMoves();
             deepsize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
 

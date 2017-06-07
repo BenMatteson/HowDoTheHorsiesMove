@@ -117,6 +117,10 @@ public class Piece {
         locy = (byte)y;
     }
 
+    public byte getY() {
+        return locy;
+    }
+
     public void addMovesToList(List<Move> moves) {
         switch (self) {
             case 'p':

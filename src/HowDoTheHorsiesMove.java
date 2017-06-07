@@ -26,6 +26,7 @@ public class HowDoTheHorsiesMove {
     private static boolean useTable = false;
     private static TTable table;
     private static boolean useSelectiveSearch = false;
+    private static int time = 300;
 
     static final Boolean buildOpen = false;
 
@@ -86,6 +87,9 @@ public class HowDoTheHorsiesMove {
                             break;
                         case 'e':
                             useSelectiveSearch = true;
+                            break;
+                        case ':':
+                            time = Integer.parseInt(args[++i]);
                             break;
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
@@ -236,7 +240,7 @@ public class HowDoTheHorsiesMove {
     private static Player getPlayerType(Board board, boolean isWhite, int type, int depth) {
         switch (type) {//0 = default iterative deepening, 1 = alpha-beta, 2 = negamax, 3 = random, 4 = server
             case 0:
-                return new IterativePlayer(board, isWhite);//Iterative player
+                return new IterativePlayer(board, isWhite, time);//Iterative player
             case 1:
                 return new NegMaxPlayer(board, isWhite, true, depth);//alpha-beta pruned player
             case 2:

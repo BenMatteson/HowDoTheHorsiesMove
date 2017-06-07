@@ -62,9 +62,22 @@ public class Board {
 
         int value = 0;
 
-        //mobility
         if(extra) {
+            //mobility
             value += generateMoves(forWhite).size() - generateMoves(!forWhite).size();
+            //pawn structure
+            if(forWhite) {
+                for (Piece p : whitePieces) {
+                    if (p.toChar() == 'P')
+                        value += 6-p.getY()-2;
+                }
+            }
+            else {
+                for (Piece p : blackPieces) {
+                    if (p.toChar() == 'p')
+                        value += p.getY()-2;
+                }
+            }
         }
 
         if (forWhite) {
@@ -203,16 +216,17 @@ public class Board {
     }
 
     public ArrayList<Move> generateMoves(boolean forWhite) {
-    ArrayList<Move> moves = new ArrayList<>(30);//30 is probably about optimal
-    PlayerPieces pieces;
-    if(forWhite)
-        pieces = whitePieces;
-    else
-        pieces = blackPieces;
-    for (Piece p : pieces) {
-        p.addMovesToList(moves);
-    }
-    return moves;
+        //30 is big enough >99.9% of the time, and not having to grow the array makes a big difference
+        ArrayList<Move> moves = new ArrayList<>(30);
+        PlayerPieces pieces;
+        if (forWhite)
+            pieces = whitePieces;
+        else
+            pieces = blackPieces;
+        for (Piece p : pieces) {
+            p.addMovesToList(moves);
+        }
+        return moves;
     }
 
     private long getKeyFromPoint(Point p) {

@@ -15,30 +15,9 @@ public class NegMaxPlayer extends Player{
         ab = alphaBeta;
     }
 
-    public NegMaxPlayer(Board board, boolean isWhite, boolean alphaBeta) {
-        super(board, isWhite);
-        ab = alphaBeta;
-        if (alphaBeta)
-            depth = 7;
-        else
-            depth = 6;
-    }
-
-    public void setDepth(int depth) {
-        this.depth = depth;
-    }
-
     @Override
     public Move getPlay() {
-        ArrayList<Move> moves = new ArrayList<>(30);//30 is probably about optimal
-        PlayerPieces pieces;
-        if(isWhite)
-            pieces = board.whitePieces;
-        else
-            pieces = board.blackPieces;
-        for (Piece p : pieces) {
-            p.addMovesToList(moves);
-        }
+        ArrayList<Move> moves = board.generateMoves();
         if(!ab)
             evaluateMoves(moves, depth);
         else {
@@ -52,19 +31,11 @@ public class NegMaxPlayer extends Player{
     int evaluateMoves(List<Move> moves, int depth) {
         if(depth > 0 && board.getPly() <= 80) {
             int value = Integer.MIN_VALUE;
-            PlayerPieces pieces;
-            if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
-                pieces = board.whitePieces;
-            else
-                pieces = board.blackPieces;
             for (Move move : moves) {
                 if(move.getValue() > 9000000)
                     return 100000 * depth; //return early if taking a king, we found a win, use depth to favor faster win
                 move.make(board);
-                List<Move> moves2 = new ArrayList<>(30);
-                for (Piece p : pieces) {
-                    p.addMovesToList(moves2);
-                }
+                List<Move> moves2 = board.generateMoves();
                 //System.out.println(moves.size());
                 int moveVal = -evaluateMoves(moves2, depth - 1);
                 move.setValue(moveVal);
@@ -81,11 +52,6 @@ public class NegMaxPlayer extends Player{
         if(depth <= 0)
             return board.getValue(); // called from a leaf, just use heuristic valuation of board
 
-        PlayerPieces pieces;
-        if (!board.isWhiteTurn()) //grab opposite pieces to get moves after move. this will be accurate then too
-            pieces = board.whitePieces;
-        else
-            pieces = board.blackPieces;
         int value = Integer.MIN_VALUE;
         /*
         for (Move move : moves) {
@@ -99,11 +65,7 @@ public class NegMaxPlayer extends Player{
             //make the move to analyze the board that results
             move.make(board);
             //create list of possible moves available to opponent
-            List<Move> moves2 = new ArrayList<>(30); //30 is big enough >99.9% of the time,
-                                            // and not having to grow the array makes a big difference
-            for (Piece p : pieces) {
-                p.addMovesToList(moves2);
-            }
+            List<Move> moves2 = board.generateMoves();
             //recur on the evaluator to value this move
             int moveVal = -abEvaluate(moves2, depth - 1, -beta, -alpha);
             move.setValue(moveVal);
