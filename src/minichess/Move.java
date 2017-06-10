@@ -11,7 +11,7 @@ public class Move implements Comparable<Move>{
     private byte srcy;
     private byte targetx;
     private byte targety;
-    //what was taken(blanks are piece objects too)
+    //what was taken
     private char took = 0;
     //value of the move for move ordering
     private int value;

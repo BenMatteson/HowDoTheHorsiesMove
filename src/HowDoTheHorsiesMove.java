@@ -196,8 +196,8 @@ public class HowDoTheHorsiesMove {
             }
 
             //print move to standard out
-            System.out.println();
-            System.out.println(move);
+            //multiple threads use std out, building the whole state first cleans it up a bit
+            StringBuilder state = new StringBuilder("\n\n" + move.toString());
 
             //if it's a networked game and is our turn, send our move to server
             if(!local && board.isWhiteTurn() == isWhite)
@@ -210,8 +210,10 @@ public class HowDoTheHorsiesMove {
 
             //print board state to standard out, as well as heuristic valuation of current state for player on move
             /*if(local)*/
-            System.out.println(board);
-            System.out.println(board.getValue() + "\n");
+            state.append("\n" + board);
+            state.append("\n" + board.getValue());
+            System.out.println(state);
+            System.out.flush();
 
             //detect if it's a win, despite warnings, just using very large value for king to determine wins
             if (board.blackPieces.getTotalValue() <  Piece.KING_VALUE) {

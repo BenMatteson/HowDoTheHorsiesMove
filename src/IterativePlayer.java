@@ -23,7 +23,7 @@ public class IterativePlayer extends Player {
     //best guess at time/depth multiplier, used to wait out iterations that may be almost complete
     //the more accurate the better, but favoring low values will front load our time
     //front loading time is probably best because better moves early lead to stronger positions later.
-    public static final float TIME_MULTIPLIER = 3.9f;
+    public static float TIME_MULTIPLIER = 3.9f;
 
     public IterativePlayer(Board board, boolean isWhite, int time) {
         super(board, isWhite);
@@ -70,12 +70,12 @@ public class IterativePlayer extends Player {
         // if this isn't enough we need to give up
         if(System.nanoTime() - running.itrStart > running.predictedNext * .6) {//if elapsed > 70% of predicted for iteration
             long extra = running.predictedNext / 2250000;//44% of predicted as milliseconds. note: could be 0
-            System.out.print(" Waiting:" + extra + " ");
+            System.out.print(" Waiting:" + extra / 1000f + " ");//show wait as seconds
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
             //wait for either the timer to expire or the iteration to complete
             try {
-                wait(extra + 1);//add 1 to ensure not 0 which is infinite wait.
+                wait(extra, 1);//add 1 nano to ensure not 0 which is infinite wait.
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

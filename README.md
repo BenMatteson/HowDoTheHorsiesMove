@@ -61,7 +61,7 @@ currently supports several players including, random, negamax of arbitrary depth
   
     sets the iterative player to use the transposition table
     <TABLE_SIZE> is the size of the table to use, as a power of 2. (2^<TABLE_SIZE>=table entries)
-    ~19 or 20 loosely reccomended, supports sizes from 0 to 32.
+    ~19-21 loosely reccomended, supports sizes from 0(2^0) to 32(2^32).
     the value will be ignored if a serealized table is found to initialize the table.
     
   -: < TIME >
