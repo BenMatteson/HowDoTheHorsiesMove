@@ -42,7 +42,7 @@ public class TTableEntry implements Serializable {
         return size;
     }
 
-    public void setSize(float size) {
+    public void setSize(int size) {
         this.size = size;
     }
 
@@ -52,7 +52,7 @@ public class TTableEntry implements Serializable {
 
     public void age() {
         //we only use this size to weight values, so we can use it to age entries to keep the table fresh
-        size -= .1f;
+        size -= .25f;// seems like a good age rate, may be on the high side though
     }
 
 }
