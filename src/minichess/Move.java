@@ -12,7 +12,7 @@ public class Move implements Comparable<Move>{
     private byte targetx;
     private byte targety;
     //what was taken(blanks are piece objects too)
-    private Piece took;
+    private char took = 0;
     //value of the move for move ordering
     private int value;
     private boolean promotion;
@@ -50,11 +50,11 @@ public class Move implements Comparable<Move>{
         return new Point(targetx, targety);
     }
 
-    void setTook(Piece took) {
+    void setTook(char took) {
         this.took = took;
     }
 
-    Piece getTook() {
+    char getTook() {
         return took;
     }
 
@@ -83,7 +83,7 @@ public class Move implements Comparable<Move>{
     }
 
     public boolean wasCapture() {
-        return took != null && took.toChar() != '.';
+        return took != 0 && took != '.';
     }
 
     @Override

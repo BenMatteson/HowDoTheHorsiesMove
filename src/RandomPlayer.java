@@ -23,7 +23,7 @@ public class RandomPlayer extends Player{
             pieces = board.blackPieces;
         for (Piece p :
                 pieces) {
-            p.addMovesToList(moves);
+            p.addMovesToList(board, moves);
         }
         if(moves.size() <= 0)
             return null;

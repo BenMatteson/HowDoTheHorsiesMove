@@ -10,45 +10,45 @@ public class Piece {
 
     public static final int PAWN_VALUE = 150;
     public static final int KING_VALUE = 10000000;//should be order(s) of magnitude > sum of all others
-    public static final int QUEEN_VALUE = 900;//can have up to 6 if all pawns promote
+    public static final int QUEEN_VALUE = 600;//can have up to 6 if all pawns promote
     public static final int KNIGHT_VALUE = 350;
     public static final int ROOK_VALUE = 500;
     public static final int BISHOP_VALUE = 300;
 
 
-    private Board board;
+    //private Board board;
     private char self;
-    private boolean isWhite = false;
-    private boolean isBlack = false;
-    private int value;
     private byte locx;
     private byte locy;
+    private char color = 0;
 
     public Piece() {
-        board = null;//only need this for pieces that move
+        //board = null;//only need this for pieces that move
 
         self = '.';
     }
 
-    public Piece(Board board, Point location, char c) {
-        this(board, location.x, location.y, c);
+    public Piece( Point location, char c) {
+        this(location.x, location.y, c);
     }
 
-    public Piece(Board board, int xloc, int yloc, char c) {
-        this.board = board;
+    public Piece(int xloc, int yloc, char c) {
+        //this.board = board;
         this.locx = (byte)xloc;
         locy = (byte)yloc;
         self = c;
-        isWhite = Character.isUpperCase(c);
-        isBlack = Character.isLowerCase(c);
+        if(Character.isUpperCase(self))
+            color = 'w';
+        else if (Character.isLowerCase(self))
+            color = 'b';
     }
 
     public boolean isWhite() {
-        return isWhite;
+        return color == 'w';
     }
 
     public boolean isBlack() {
-        return isBlack;
+        return color == 'b';
     }
 
     public static int getValue(char c) {
@@ -71,31 +71,7 @@ public class Piece {
     }
 
     public int getValue() {
-        if (value == 0) {
-            switch (Character.toLowerCase(self)) {
-                case 'p':
-                    value = PAWN_VALUE;
-                    break;
-                case 'r':
-                    value = ROOK_VALUE;
-                    break;
-                case 'b':
-                    value = BISHOP_VALUE;
-                    break;
-                case 'n':
-                    value = KNIGHT_VALUE;
-                    break;
-                case 'q':
-                    value = QUEEN_VALUE;
-                    break;
-                case 'k':
-                    value = KING_VALUE;
-                    break;
-                default:
-                    value = 0;
-            }
-        }
-        return value;
+        return getValue(self);
     }
 
     public char toChar() {
@@ -121,39 +97,39 @@ public class Piece {
         return locy;
     }
 
-    public void addMovesToList(List<Move> moves) {
+    public void addMovesToList(Board board, List<Move> moves) {
         switch (self) {
             case 'p':
-                symScan(moves, 1, 1, true, -1, 2);
-                scanMoves(moves, 0, 1, true, 0);
+                symScan(board, moves, 1, 1, true, -1, 2, this);
+                scanMoves(board, moves, 0, 1, true, 0, this);
                 break;
             case 'P':
-                symScan(moves, -1, -1, true, -1, 2);
-                scanMoves(moves, 0, -1, true, 0);
+                symScan(board, moves, -1, -1, true, -1, 2, this);
+                scanMoves(board, moves, 0, -1, true, 0, this);
                 break;
             case 'r':
             case 'R':
-                symScan(moves, 1, 0);
+                symScan(board, moves, 1, 0, this);
                 break;
             case 'b':
             case 'B':
-                symScan(moves, 1, 1);
-                symScan(moves, 1, 0, true, 0);
+                symScan(board, moves, 1, 1, this);
+                symScan(board, moves, 1, 0, true, 0, this);
                 break;
             case 'n':
             case 'N':
-                symScan(moves, 2, 1, true, 1);
-                symScan(moves, 2, -1, true, 1);
+                symScan(board, moves, 2, 1, true, 1, this);
+                symScan(board, moves, 2, -1, true, 1, this);
                 break;
             case 'q':
             case 'Q':
-                symScan(moves, 1, 0);
-                symScan(moves, 1, 1);
+                symScan(board, moves, 1, 0, this);
+                symScan(board, moves, 1, 1, this);
                 break;
             case 'k':
             case 'K':
-                symScan(moves, 0, 1, true, 1);
-                symScan(moves, 1, 1, true, 1);
+                symScan(board, moves, 0, 1, true, 1, this);
+                symScan(board, moves, 1, 1, true, 1, this);
                 break;
             default:
                 return;
@@ -161,24 +137,24 @@ public class Piece {
 
     }
 
-    private void symScan(List<Move> moves, int dx, int dy) { // continuous scan in all directions, for Q,B,R
-        symScan(moves, dx, dy, false, 1, 4);
+    private static void symScan(Board board, List<Move> moves, int dx, int dy, Piece piece) { // continuous scan in all directions, for Q,B,R
+        symScan(board, moves, dx, dy, false, 1, 4, piece);
     }
 
-    private void symScan(List<Move> moves, int dx, int dy, boolean stopShort, int capture) { // stopshort scan in all directions for K,N,B(change color)
-        symScan(moves, dx, dy, stopShort, capture, 4);
+    private static void symScan(Board board, List<Move> moves, int dx, int dy, boolean stopShort, int capture, Piece piece) { // stopshort scan in all directions for K,N,B(change color)
+        symScan(board, moves, dx, dy, stopShort, capture, 4, piece);
     }
 
-    private void symScan(List<Move> moves, int dx, int dy, boolean stopShort, int capture, int steps) { // also used at 2 steps for pawn attacks
+    private static void symScan(Board board, List<Move> moves, int dx, int dy, boolean stopShort, int capture, int steps, Piece piece) { // also used at 2 steps for pawn attacks
         if(steps <= 0) return;
-        scanMoves(moves, dx, dy, stopShort, capture);
-        symScan(moves, -dy, dx, stopShort, capture, --steps);
+        scanMoves(board, moves, dx, dy, stopShort, capture, piece);
+        symScan(board, moves, -dy, dx, stopShort, capture, --steps, piece);
     }
 
-    private void scanMoves(List<Move> moves, int dx, int dy, boolean stopShort, int capture) {
+    private static void scanMoves(Board board, List<Move> moves, int dx, int dy, boolean stopShort, int capture, Piece piece) {
         byte x, y;
-        x = locx;
-        y = locy;
+        x = piece.locx;
+        y = piece.locy;
         int xBound = Board.WIDTH - 1;
         int yBound = Board.HEIGHT - 1;
         do{
@@ -190,14 +166,14 @@ public class Piece {
             Piece target = board.getSquare(x, y);
 
             if(target.toChar() != '.') {
-                if (isWhite == target.isWhite || capture == 0) //same color or can't cap
+                if (piece.isWhite() == target.isWhite() || capture == 0) //same color or can't cap
                     break;
                 stopShort = true; //can cap this piece, but we can't continue further
             }
             else if(capture == -1)
                 break;
 
-            moves.add(new Move(locx, locy, x, y, board));
+            moves.add(new Move(piece.locx, piece.locy, x, y, board));
         } while (!stopShort);
     }
 }

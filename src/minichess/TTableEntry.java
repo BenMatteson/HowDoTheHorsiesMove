@@ -7,7 +7,7 @@ public class TTableEntry implements Serializable {
     byte flag;
     int value;
     int key;
-    int size;
+    float size;
 
     public TTableEntry(int key, int depth) {
         this.key = key;
@@ -38,16 +38,21 @@ public class TTableEntry implements Serializable {
         this.flag = ((byte)flag);
     }
 
-    public int getSize() {
+    public float getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(float size) {
         this.size = size;
     }
 
     public int getKey() {
         return key;
+    }
+
+    public void age() {
+        //we only use this size to weight values, so we can use it to age entries to keep the table fresh
+        size -= .1f;
     }
 
 }

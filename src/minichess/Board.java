@@ -28,7 +28,7 @@ public class Board {
         whitePieces = new PlayerPieces();
         //TODO cache this
         zobKeys = new long[WIDTH][HEIGHT][12];
-        Random rnd = new Random(480312325	);
+        Random rnd = new Random(480312325);
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < 12; j++) {
                 for (int k = 0; k < HEIGHT; k++) {
@@ -104,7 +104,7 @@ public class Board {
     }
 
     private Piece setSquare(char c, Point loc) {
-        return setSquare(new Piece(this, loc, c), loc);
+        return setSquare(new Piece(loc, c), loc);
     }
 
     private Piece setSquare(Piece piece, Point loc) {
@@ -127,20 +127,20 @@ public class Board {
                 && piece.toChar() == 'p') {//black pawn up for promotion
             move.setPromotion(true);
             blackPieces.remove(piece);//remove pawn from pieces
-            piece = new Piece(this, dest, 'q');
+            piece = new Piece(dest, 'q');
             blackPieces.add(piece);//add queen to pieces
         } else if (dest.y == 0 //index of top of board
                 && piece.toChar() == 'P') {//white pawn up for promotion
             move.setPromotion(true);
             whitePieces.remove(piece);
-            piece = new Piece(this, dest, 'Q');
+            piece = new Piece(dest, 'Q');
             whitePieces.add(piece);
         } else { //not a promotion, just move the piece
             piece.setLocation(dest);
         }
 
         Piece took = setSquare(piece, dest);//set piece to new location and save the piece that was captured
-        move.setTook(took);
+        move.setTook(took.toChar());
 
         if (took.isWhite()) whitePieces.remove(took);//remove piece list if needed
         else if (took.isBlack()) blackPieces.remove(took);
@@ -173,7 +173,7 @@ public class Board {
             setSquare(piece, src);
         }
 
-        Piece took = move.getTook();
+        Piece took = new Piece(target, move.getTook());
         if (took.isBlack())
             blackPieces.add(took);
         else if (took.isWhite())
@@ -196,7 +196,7 @@ public class Board {
             for (int w = 0; w < WIDTH; w++) {
                 char c = parts[h + 1].charAt(w);
                 Point loc = new Point(w, h);
-                Piece p = new Piece(this, loc, c);
+                Piece p = new Piece(loc, c);
                 this.board[w][h] = p;
                 if (Character.isUpperCase(c))
                     whitePieces.add(p);
@@ -224,7 +224,7 @@ public class Board {
         else
             pieces = blackPieces;
         for (Piece p : pieces) {
-            p.addMovesToList(moves);
+            p.addMovesToList(this, moves);
         }
         return moves;
     }

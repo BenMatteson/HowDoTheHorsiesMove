@@ -33,6 +33,9 @@ public class TTable implements Serializable{
         if(first != null) {
             if (first.getSize() > entry.getSize()) {
                 table[index + capacity] = entry;//replace second
+                //ages collisions that are not replaced slowly(hopefully)
+                //this way even very large entries eventually get replaced if they're in the way
+                first.age();
                 return;
             }
             else {

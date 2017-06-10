@@ -1,8 +1,10 @@
 import minichess.*;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.URI;
 import java.util.*;
 
 
@@ -18,10 +20,10 @@ public class IterativePlayer extends Player {
     boolean ready;
     TTable table;
 
-    //best guess at branching factor, used to wait out iterations that may be almost complete
+    //best guess at time/depth multiplier, used to wait out iterations that may be almost complete
     //the more accurate the better, but favoring low values will front load our time
     //front loading time is probably best because better moves early lead to stronger positions later.
-    public static final int BRANCHING_FACTOR = 17;
+    public static final float TIME_MULTIPLIER = 3.9f;
 
     public IterativePlayer(Board board, boolean isWhite, int time) {
         super(board, isWhite);
@@ -66,9 +68,9 @@ public class IterativePlayer extends Player {
 
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
-        if(System.nanoTime() - running.itrStart > running.predictedNext * .7) {//if elapsed > 70% of predicted for iteration
-            long extra = running.predictedNext / 3000000;//33% of predicted as milliseconds. note: could be 0
-
+        if(System.nanoTime() - running.itrStart > running.predictedNext * .6) {//if elapsed > 70% of predicted for iteration
+            long extra = running.predictedNext / 2250000;//44% of predicted as milliseconds. note: could be 0
+            System.out.print(" Waiting:" + extra + " ");
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
 
             //wait for either the timer to expire or the iteration to complete
@@ -129,7 +131,8 @@ class PlayerThread extends Thread {
     @Override
     public void run() {
         moves = board.generateMoves();
-        for (int i = 0; i < 80; i++) {
+        int maxDepth = HowDoTheHorsiesMove.MAX_PLY - board.getPly() + 1;
+        for (int i = 1; i <= maxDepth; i++) {
             itrStart = System.nanoTime();
             try {
                 itrEvaluate(moves, i, -10000000, 10000000);
@@ -137,7 +140,7 @@ class PlayerThread extends Thread {
                 return;
             }
             itrEnd = System.nanoTime();
-            predictedNext = (itrEnd - itrStart) * IterativePlayer.BRANCHING_FACTOR;//best guess branching factor
+            predictedNext = (long) ((itrEnd - itrStart) * IterativePlayer.TIME_MULTIPLIER);//best guess branching factor
             Collections.sort(moves);
             move = moves.get(0);
             if(requestNotify) {
@@ -151,20 +154,22 @@ class PlayerThread extends Thread {
                     FileOutputStream fout = new FileOutputStream("TTable.ser");
                     ObjectOutputStream oos = new ObjectOutputStream(fout);
                     oos.writeObject(board.getTable());
+                    oos.close();
+                    fout.close();
                 } catch (IOException e) {
                     System.err.println("error saving TTable");
                     e.printStackTrace();
                 }
             }
-            System.out.println(i);
+            System.out.print(i + " ");
         }
         //we wait if we've exited the loop in case the player hasn't retrieved it yet.
         while(!read){
             try {
                 p.gotMove();
-                wait(1000);
-            } catch (Exception e) {
-                return;
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                break;
             }
         }
     }
@@ -206,8 +211,8 @@ class PlayerThread extends Thread {
         //do the search
         int bestValue = Integer.MIN_VALUE;
         int s = moves.size();
-        int deepsize = s;
-        Collections.shuffle(moves);
+        int deepSize = s;
+        //Collections.shuffle(moves);
         Collections.sort(moves);
         //*
         for (Move move : moves) { //seems to be the faster option
@@ -216,20 +221,21 @@ class PlayerThread extends Thread {
             Move move = moves.get(i);
         //*/
             if(move.getValue() > 9000000) {
-                bestValue = 100000 * depth; //return early if taking a king, we found a win, add depth to favor faster wins
+                bestValue = 100000 * depth; //return early if taking a king, we found a win, use depth to favor faster wins
                 break;
             }
             //make the move to analyze the board that results
             move.make(board);
-            //get list of possible moves available to opponent
-            List<Move> moves2 = board.generateMoves();
-            deepsize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
 
             //look deeper for moves that involve capturing pieces
             //tied to a flag for more granular board evaluation, otherwise it does bad things
             //but I don't know if I like the extra step to the search, so it's not always on
             //will decrement depth normally except when the last move is a capture otherwise
-            int active = (depth <= 1 && move.wasCapture() && Board.extra) ? 0 : 1;//0 if a piece was captured by the last move
+            int active = (Board.extra && depth <= 1 && move.wasCapture()) ? 0 : 1;//0 if a piece was captured by the last move
+
+            //get list of possible moves available to opponent
+            List<Move> moves2 = board.generateMoves();
+            deepSize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
 
             //recur on the evaluator to value this move
             int moveVal = -itrEvaluate(moves2, depth - active, -beta, -alpha);
@@ -250,7 +256,7 @@ class PlayerThread extends Thread {
 
         //store our info in the ttable
         if(ttable != null) {
-            entry.setSize(deepsize);
+            entry.setSize(deepSize);
             entry.setValue(bestValue);
             if (bestValue <= alphaOrig)
                 entry.setFlag(1);

@@ -23,12 +23,14 @@ public class HowDoTheHorsiesMove {
     private static int blackDepth = -1;
     private static Client client = null;
     private static Board board;
+    private static int tTableSize = 20;
     private static boolean useTable = false;
     private static TTable table;
     private static boolean useSelectiveSearch = false;
     private static int time = 300;
 
-    static final Boolean buildOpen = false;
+    public static final int MAX_PLY = 80;
+    static Boolean buildOpen = false;
 
     public static void main(String[] args) {
 
@@ -84,6 +86,7 @@ public class HowDoTheHorsiesMove {
                             break;
                         case 'h':
                             useTable = true;
+                            tTableSize = Integer.parseInt(args[++i]);
                             break;
                         case 'e':
                             useSelectiveSearch = true;
@@ -91,28 +94,33 @@ public class HowDoTheHorsiesMove {
                         case ':':
                             time = Integer.parseInt(args[++i]);
                             break;
+                        case '0':
+                            buildOpen = true;
                         default:
                             System.err.println("Invalid flag '" + c + "', will be ignored.");
                     }
                 }
             }
         }
-        if (blackDepth <= -1) blackDepth = whiteDepth; //allow using -d to set depth for either player in remote game
-        //we allow setting 0 to run it as a pure heuristic player
+        whiteDepth = Math.max(1, whiteDepth);
+        if (blackDepth <= 0) blackDepth = whiteDepth; //allow using -d to set depth for either player in remote game
+        //1 is a heuristic player
         //endregion
 
-        if (useTable) {
+        if (useTable && !buildOpen) {
             try {//try to load table from file
                 FileInputStream fin = new FileInputStream("TTable.ser");
                 ObjectInputStream ois = new ObjectInputStream(fin);
                 table = ((TTable) ois.readObject());
+                ois.close();
+                fin.close();
             } catch (IOException e) {
                 System.err.println("no initial data found");
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
             if (table == null)
-                table = new TTable(20);//2^20
+                table = new TTable(tTableSize);//2^tTableSize
         }
 
         board = new Board("1 W\nkqbnr\nppppp\n.....\n.....\nPPPPP\nRNBQK", table);
@@ -162,7 +170,7 @@ public class HowDoTheHorsiesMove {
         System.out.println(board + "\n");
 
         //play they game
-        for (int i = 1; i <= 80; i++) {
+        for (int i = 1; i <= MAX_PLY; i++) {
             Move move;
             if (i % 2 == 1)
                 move = white.getPlay();
@@ -188,6 +196,7 @@ public class HowDoTheHorsiesMove {
             }
 
             //print move to standard out
+            System.out.println();
             System.out.println(move);
 
             //if it's a networked game and is our turn, send our move to server
