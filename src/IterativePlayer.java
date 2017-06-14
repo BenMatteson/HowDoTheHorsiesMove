@@ -1,11 +1,14 @@
-import minichess.*;
+import minichess.Board;
+import minichess.Move;
+import minichess.TTable;
+import minichess.TTableEntry;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 
 /**
@@ -111,13 +114,14 @@ class PlayerThread extends Thread {
     Move move;
     boolean isWhite;
     boolean running;
-    ArrayList<Move> moves;
+    List<Move> moves;
     long itrStart;
     long itrEnd;
     long predictedNext;
     IterativePlayer p;
     boolean requestNotify;
     boolean read;
+    Random rnd;
 
     public PlayerThread(Board board, boolean isWhite, IterativePlayer player) {
         this.board = board;
@@ -126,6 +130,7 @@ class PlayerThread extends Thread {
         p = player;
         requestNotify = true;
         read = false;
+        rnd = new Random();
     }
 
     @Override
@@ -212,7 +217,6 @@ class PlayerThread extends Thread {
         int bestValue = Integer.MIN_VALUE;
         int s = moves.size();
         int deepSize = s;
-        //Collections.shuffle(moves);
         Collections.sort(moves);
         //*
         for (Move move : moves) { //seems to be the faster option
@@ -236,7 +240,7 @@ class PlayerThread extends Thread {
             //get list of possible moves available to opponent
             List<Move> moves2 = board.generateMoves();
             deepSize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
-
+            //Collections.shuffle(moves2, rnd);
             //recur on the evaluator to value this move
             int moveVal = -itrEvaluate(moves2, depth - active, -beta, -alpha);
             moves2 = null;

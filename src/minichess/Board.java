@@ -81,9 +81,9 @@ public class Board {
         }
 
         if (forWhite) {
-            return value + whitePieces.getTotalValue() - blackPieces.getTotalValue();
+            return (whitePieces.getTotalValue() - blackPieces.getTotalValue()) + value;
         } else
-            return value + blackPieces.getTotalValue() - whitePieces.getTotalValue();
+            return (blackPieces.getTotalValue() - whitePieces.getTotalValue()) + value;
     }
 
     // board value for active player
@@ -211,13 +211,13 @@ public class Board {
         return table;
     }
 
-    public ArrayList<Move> generateMoves() {
+    public List<Move> generateMoves() {
         return generateMoves(isWhiteTurn());
     }
 
-    public ArrayList<Move> generateMoves(boolean forWhite) {
+    public List<Move> generateMoves(boolean forWhite) {
         //30 is big enough >99.9% of the time, and not having to grow the array makes a big difference
-        ArrayList<Move> moves = new ArrayList<>(30);
+        List<Move> moves = new ArrayList<>(30);
         PlayerPieces pieces;
         if (forWhite)
             pieces = whitePieces;

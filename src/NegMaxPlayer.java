@@ -17,7 +17,7 @@ public class NegMaxPlayer extends Player{
 
     @Override
     public Move getPlay() {
-        ArrayList<Move> moves = board.generateMoves();
+        List<Move> moves = board.generateMoves();
         if(!ab)
             evaluateMoves(moves, depth);
         else {
