@@ -19,6 +19,8 @@ public class Board {
     private long zobKey;
     private TTable table;
 
+    private static final int SEED = 908178478;
+
     public static boolean extra = true;
 
 
@@ -28,7 +30,7 @@ public class Board {
         whitePieces = new PlayerPieces();
         //TODO cache this
         zobKeys = new long[WIDTH][HEIGHT][12];
-        Random rnd = new Random(480312325);
+        Random rnd = new Random(SEED);
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < 12; j++) {
                 for (int k = 0; k < HEIGHT; k++) {
@@ -50,16 +52,21 @@ public class Board {
         return ply % 2 == 1;
     }
 
-    //board value based purely on piece values
-    //TODO make this more discerning
-    public int getValue(boolean forWhite) {
-        //check ttable if available
-        if(table != null) {
-            TTableEntry entry = table.get(zobLow(), zobHigh());
-        if(entry != null)
-                return entry.getValue();//use value if we already calculated it to any depth
-        }
+    // board value for active player
+    public int getValue(boolean useTable) {
+        return getValue(isWhiteTurn(), useTable);
+    }
 
+    //TODO make this more discerning
+    public int getValue(boolean forWhite, boolean useTable) {
+        if(useTable) {
+            //check ttable if available
+            if (table != null) {
+                TTableEntry entry = table.get(zobLow(), zobHigh());
+                if (entry != null)
+                    return entry.getValue();//use value if we already calculated it to any depth
+            }
+        }
         int value = 0;
 
         if(extra) {
@@ -84,11 +91,6 @@ public class Board {
             return (whitePieces.getTotalValue() - blackPieces.getTotalValue()) + value;
         } else
             return (blackPieces.getTotalValue() - whitePieces.getTotalValue()) + value;
-    }
-
-    // board value for active player
-    public int getValue() {
-        return getValue(isWhiteTurn());
     }
 
     public Piece getSquare(int x, int y) {

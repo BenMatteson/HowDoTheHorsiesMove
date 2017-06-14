@@ -211,7 +211,7 @@ public class HowDoTheHorsiesMove {
             //print board state to standard out, as well as heuristic valuation of current state for player on move
             /*if(local)*/
             state.append("\n" + board);
-            state.append("\n" + board.getValue());
+            state.append("\n" + board.getValue(true));
             System.out.println(state);
             System.out.flush();
 

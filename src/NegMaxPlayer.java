@@ -45,12 +45,12 @@ public class NegMaxPlayer extends Player{
             return value;
         }
         else
-            return board.getValue();
+            return board.getValue(false);
     }
 
     private int abEvaluate(List<Move> moves, int depth, int alpha, int beta) {
         if(depth <= 0)
-            return board.getValue(); // called from a leaf, just use heuristic valuation of board
+            return board.getValue(false); // called from a leaf, just use heuristic valuation of board
 
         int value = Integer.MIN_VALUE;
         /*

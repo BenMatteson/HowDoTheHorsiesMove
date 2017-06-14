@@ -71,7 +71,7 @@ public class IterativePlayer extends Player {
 
         //if the current step is probably almost finished, let it run about how long we expect,
         // if this isn't enough we need to give up
-        if(System.nanoTime() - running.itrStart > running.predictedNext * .6) {//if elapsed > 70% of predicted for iteration
+        if(System.nanoTime() - running.itrStart > running.predictedNext * .6) {//if elapsed > 60% of predicted for iteration
             long extra = running.predictedNext / 2250000;//44% of predicted as milliseconds. note: could be 0
             System.out.print(" Waiting:" + extra / 1000f + " ");//show wait as seconds
             running.requestNotify = true;//this is a bit of a race, but if we have rally bad luck the timeout means it's fine
@@ -188,7 +188,7 @@ class PlayerThread extends Thread {
         if (Thread.interrupted())//done with this thread, throw it out!
             throw new InterruptedException();
         if (depth <= 0)
-            return board.getValue(); // called from a leaf, just use heuristic valuation of board
+            return board.getValue(true); // called from a leaf, just use heuristic valuation of board
 
         int alphaOrig = alpha;
         TTable ttable = board.getTable();
@@ -216,6 +216,7 @@ class PlayerThread extends Thread {
         //do the search
         int bestValue = Integer.MIN_VALUE;
         int s = moves.size();
+        //System.out.println(s);
         int deepSize = s;
         Collections.sort(moves);
         //*
@@ -241,6 +242,7 @@ class PlayerThread extends Thread {
             List<Move> moves2 = board.generateMoves();
             deepSize += moves2.size();//save the size of the top few tiers of current subtree for cheap size estimate
             //Collections.shuffle(moves2, rnd);
+
             //recur on the evaluator to value this move
             int moveVal = -itrEvaluate(moves2, depth - active, -beta, -alpha);
             moves2 = null;

@@ -146,9 +146,14 @@ public class Piece {
     }
 
     private static void symScan(Board board, List<Move> moves, int dx, int dy, boolean stopShort, int capture, int steps, Piece piece) { // also used at 2 steps for pawn attacks
-        if(steps <= 0) return;
-        scanMoves(board, moves, dx, dy, stopShort, capture, piece);
-        symScan(board, moves, -dy, dx, stopShort, capture, --steps, piece);
+        //if(steps <= 0) return;
+        for (int i = 0; i < steps; i++) {
+            scanMoves(board, moves, dx, dy, stopShort, capture, piece);
+            int temp = dx;
+            dx = -dy;
+            dy = temp;
+        }
+        //symScan(board, moves, -dy, dx, stopShort, capture, --steps, piece);
     }
 
     private static void scanMoves(Board board, List<Move> moves, int dx, int dy, boolean stopShort, int capture, Piece piece) {
