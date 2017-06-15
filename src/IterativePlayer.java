@@ -198,7 +198,9 @@ class PlayerThread extends Thread {
         //get info from ttable
         if (ttable != null) {
             entry = ttable.get(board.zobLow(), board.zobHigh());
-            if (entry != null && entry.getDepth() >= depth) {
+            if (entry != null
+                        && entry.getDepth() >= depth //entry is deep enough to use
+                        && entry.getDepth() <= HowDoTheHorsiesMove.MAX_PLY - board.getPly()) { //depth not past end of game
                     if (entry.getFlag() == 0)//exact
                         return entry.getValue();
                     else if (entry.getFlag() < 0)//lower bound
